@@ -1,13 +1,14 @@
 # This demo shows how to read and calibrate the hyperspectral data in envi format.
 import sys
+sys.path.append('../appf_toolbox')
 from appf_toolbox.hyper_processing import envi_funs
 from matplotlib import pyplot as plt
 import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
-folder_name = 'vnir_74_104_6235_2019-10-18_01-47-33'
+folder_path = '/media/huajian/Files/Data/VNIR_error_example'
+folder_name = 'vnir_43_54_1790_2018-10-01_22-50-58'
 # folder_name = 'swir_74_104_6235_2019-10-18_01-47-33'
 
 
@@ -53,7 +54,7 @@ plant_cal = (raw_data['plant'] - ave_dark) / (ave_white - ave_dark + 1e-6)
 # Calculate the signal to noise ratio in total and each band; plot
 n_noise = np.sum(np.logical_or(plant_cal > 1, plant_cal < 0))
 sn_tot = n_noise / (n_bands * n_samples * plant_cal.shape[0])
-print('Total s/n is ' + '%.2f' % (sn_tot * 100) + '%')
+print('Total noise (%) is ' + '%.2f' % (sn_tot * 100) + '%')
 
 sn_band_list = []
 for ind_band in range(n_bands):
@@ -62,10 +63,10 @@ for ind_band in range(n_bands):
     sn_band_list.append(sn_band)
 
 fig_sn = plt.figure()
-fig_sn.suptitle('s/n at each band', fontsize=14, fontweight='bold')
+fig_sn.suptitle('Noise (%) at each band', fontsize=14, fontweight='bold')
 plt.plot(wavelengths, np.asarray(sn_band_list) * 100)
 plt.xlabel('Wavelengths (nm)', fontsize=12, fontweight='bold')
-plt.ylabel('s/n (%)', fontsize=12, fontweight='bold')
+plt.ylabel('Noise (%)', fontsize=12, fontweight='bold')
 ########################################################################################################################
 
 
