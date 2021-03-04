@@ -1,6 +1,5 @@
 from spectral import *
 import numpy as np
-import numpy as np
 from matplotlib import pyplot as plt
 
 ########################################################################################################################
@@ -317,3 +316,280 @@ def spectral_resample(source_spectral_sig_array, source_wavelength, destination_
     return destination_spectral_sig_array
 
 
+########################################################################################################################
+# Green crop segmentation
+########################################################################################################################
+def crop_segmentation(hyp_data_path,
+                      model_name_vnir='',
+                      model_name_swir='',
+                      model_path='./',
+                      gamma=0.8,
+                      flag_remove_noise=False,
+                      white_offset_top=0.1,
+                      white_offset_bottom=0.9,
+                      band_R=10,
+                      band_G=50,
+                      band_B=150,
+                      flag_save=True,
+                      save_path='./'):
+    """
+    Conduct crop segmentaion for the WIWAM hyprspectral data uisng pre-trained models.
+    :param hyp_data_path: Path of WIWAN hyperspectral data.
+    :param model_name_vnir: Crop segmentation model for VNIR data
+    :param model_name_swir: Crop segmentation model for SWIR data
+    :param model_path: Path of the models
+    :param gamma: For gamma correction of gray-scal images; [0.1, 1]
+    :param flag_remove_noise: Flage for de-nose of BW image
+    :param white_offset_top: Offset of the top of white reference; default  0.1
+    :param white_offset_bottom: Offset of the bottom of white reference default 0.9
+    :param band_R: Band number of R for making pseudo images
+    :param band_G: Band number of G for making pseudo image
+    :param band_B: Band number of B for making pseudo image
+    :param flag_save: Flage for the saving the BW and pseudo image
+    :param save_path: Path for saving the image.
+    :return: 0
+    """
+
+    # -------------------------------------------------------------
+    # Import toolboxes
+    # -------------------------------------------------------------
+    import sys
+    from pathlib import Path
+    sys.path.append(Path(__file__).parent.parent.parent)
+    from appf_toolbox.hyper_processing import transformation as tf
+    from appf_toolbox.hyper_processing import pre_processing as pp
+    from appf_toolbox.hyper_processing import envi_funs
+    from skimage import morphology
+    from skimage import exposure
+    from matplotlib import pyplot as plt
+    from os import walk
+
+    # Read the data names for processing
+    for (hyp_path, hyp_name, hyp_files) in walk(hyp_data_path):
+        break
+
+    # ------------------------------------------------------------
+    # Process the data
+    # ------------------------------------------------------------
+    number_pro = 0
+    error_report = []
+
+    for i in range(0, hyp_name.__len__()):
+        # ...............
+        # Read a data set
+        # ...............
+        try:
+            raw_data, meta_plant = envi_funs.read_hyper_data(hyp_data_path, hyp_name[i])
+        except:
+            error_ms = 'Read ENVI files errors in ' + hyp_name[i]
+            print(error_ms)
+            error_report.append(hyp_name[i])
+            number_pro += 1
+            continue
+
+        # ...........
+        # Calibration
+        # ...........
+        data = envi_funs.calibrate_hyper_data(raw_data['white'], raw_data['dark'], raw_data['plant'], white_offset_top,
+                                              white_offset_bottom)
+        # .......
+        # Smooth
+        # .......
+        # Load model
+        if hyp_name[i][0:4] == 'vnir':
+            model_record = np.load(model_path + '/' + model_name_vnir, allow_pickle=True).flat[0]
+        elif hyp_name[i][0:4] == 'swir':
+            model_record = np.load(model_path + '/' + model_name_swir, allow_pickle=True).flat[0]
+        else:
+            print('Neither vnir or swir data. Model cannot be loaded!')
+            break
+
+        model = model_record['model']
+        record = model_record['record']
+
+        # Reshape
+        row = data.shape[0]
+        col = data.shape[1]
+
+        # R, G and B bands for later use
+        R = data[:, :, band_R].reshape((row, col, 1))
+        G = data[:, :, band_G].reshape((row, col, 1))
+        B = data[:, :, band_B].reshape((row, col, 1))
+
+        data = data.reshape((row * col, data.shape[2]), order='C')
+
+        # Smooth
+        data = pp.smooth_savgol_filter(data, record['window length of smooth filter'],
+                                       record['polyorder of smooth filter'])
+        data[data < 0] = 0
+
+        # ..........
+        # Resampling
+        # ..........
+        wave = meta_plant.metadata['Wavelength']
+        wave = np.asarray(wave).astype(np.float)
+        wave_model = record['wave_model']
+        data = pp.spectral_resample(data, wave, wave_model)
+
+        # ..............
+        # Classification
+        # ..............
+        # hc2hhsi
+        data = data.reshape((row, col, data.shape[1]))
+        data, saturation, intensity = tf.hc2hhsi(data)
+
+        # Reshape to 2D for OneClassSVM_swir_hh
+        data = data.reshape((row * col, data.shape[2]), order='C')
+
+        # Classification
+        try:
+            classes = model.predict(data)
+        except ValueError:
+            error_ms = 'Value error after hc2hhsi in ' + hyp_name[i]
+            print(error_ms)
+            error_report.append(error_ms)
+            number_pro += 1
+
+        # .............
+        # Make BW image
+        # .............
+        bw = classes.reshape((row, col), order='C')
+        bw[bw == -1] = False
+        bw[bw == 1] = True
+
+        # Remove noise in BW image
+        if flag_remove_noise:
+            # Erosion and reconstruction
+            selem = np.ones((3, 3))
+            bw_ero = morphology.binary_erosion(bw, selem=selem)
+            bw = morphology.reconstruction(bw_ero, bw)
+
+            # Revove_samll_holes only accept bool type
+            bw = bw.astype(bool)
+            bw = morphology.remove_small_holes(bw)
+
+        # ............
+        # Save results
+        # ............
+        if flag_save:
+            # Border
+            border = np.logical_and(bw, np.bitwise_not(morphology.binary_erosion(bw)))
+
+            R[border] = 1
+            G[border] = 0
+            B[border] = 0
+            pseu = np.concatenate((R, G, B), axis=2)
+            pseu = exposure.adjust_gamma(pseu, gamma)
+
+            plt.imsave(save_path + '/' + hyp_name[i] + '_bw.png', bw, cmap='gray')
+            plt.imsave(save_path + '/' + hyp_name[i] + '_pseu.png', pseu)
+
+        # ....................................
+        # Print information for each iteration
+        # ....................................
+        number_pro += 1
+        print(hyp_name[i] + ' finished!' + ' ' + str('%.2f' % (100 * number_pro / hyp_name.__len__())) + '%',
+              '(' + str(number_pro) + '/' + str(hyp_name.__len__()) + ')' )
+
+    print('Error report: ')
+    print(error_report)
+
+    return 0
+
+
+########################################################################################################################
+# Calculate the average reflectance of crops.
+########################################################################################################################
+def ave_ref_crop(hyp_path,
+                 hyp_name,
+                 mask,
+                 flag_smooth=True,
+                 window_length=21,
+                 polyorder=3,
+                 flag_check=False,
+                 band_ind=50,
+                 ref_ind=50,
+                 white_offset_top=0.1,
+                 white_offset_bottom=0.9):
+    """
+    Calculate the average reflectance of crops using a mask (BW); disigned for WIWAM system
+    :param hyp_path: The path of the hyperspectral data for processing.
+    :param hyp_name: The name of the hyperspectral data for processing.
+    :param mask: the BW image as a mask generated by crop_segmentation().
+    :param flag_smooth: Flag for smooth the reflectance data or not; defaut is True
+    :param window_length: window length for smoothing; default is 21
+    :param polyorder: Polyorder for smoothing; default is 3
+    :param flag_check: Flag for check the processed data or not; default is Fasle
+    :param band_ind: A random band number for check; default is 50
+    :param ref_ind: A random reflectance of plant for check; default is 50
+    :param white_offset_top: Offset of the top of white reference; default  0.1
+    :param white_offset_bottom: Offset of the bottom of white reference; default  0.9
+    :return: Averaged reflectance value of crop and the corresponding wavelengths.
+
+    Author: Huajian Liu
+    v0: 1 March, 2021
+    """
+
+    # -------------------------------------------------------------
+    # Import toolboxes
+    # -------------------------------------------------------------
+    import sys
+    from pathlib import Path
+    sys.path.append(Path(__file__).parent.parent.parent)
+    from appf_toolbox.hyper_processing import pre_processing as pp
+    from appf_toolbox.hyper_processing import envi_funs
+    from matplotlib import pyplot as plt
+
+    # -------------------------------------------------------------
+    # Read and calibration
+    # -------------------------------------------------------------
+    try:
+        raw_data, meta_plant = envi_funs.read_hyper_data(hyp_path, hyp_name)
+    except:
+        error_ms = 'Read ENVI files errors in ' + hyp_name
+        print(error_ms)
+
+    data = envi_funs.calibrate_hyper_data(raw_data['white'], raw_data['dark'], raw_data['plant'], white_offset_top,
+                                          white_offset_bottom)
+
+    wavelengths = meta_plant.metadata['Wavelength']
+    wavelengths = np.asarray(wavelengths)
+    wavelengths = wavelengths.astype(float)
+
+    # Take out crop pixels
+    data[mask==0]=0
+    # Check mask
+    if flag_check:
+        fig1, af1 = plt.subplots(1, 1)
+        af1.imshow(data[:, :, band_ind], cmap='gray')
+        af1.set_title('Band ' + str(band_ind) + '@' + str(wavelengths[band_ind]) + 'nm')
+        plt.show()
+
+    # Reshape and remove zero-rows
+    data = data.reshape((data.shape[0] * data.shape[1], data.shape[2]), order='C')
+    zero_row_ind = np.where(~data.any(axis=1))[0]
+    data = np.delete(data, zero_row_ind, axis=0)
+
+    # Check
+    if flag_check:
+        fig2, af2 = plt.subplots(1, 1)
+        af2.plot(wavelengths, data[ref_ind], color='blue', label='A random ref without smooth')
+        af2.set_xlabel('Wavelength (nm)', fontsize=12, fontweight='bold')
+        af2.set_ylabel('Reflectance', fontsize=12, fontweight='bold')
+
+     # Smooth
+    if flag_smooth:
+        data = pp.smooth_savgol_filter(data, window_length, polyorder)
+        data[data < 0] = 0
+
+        if flag_check:
+            af2.plot(wavelengths, data[ref_ind], color='green', label='A random ref with smooth')
+            af2.set_title('A random and average reflectance for check')
+
+    # Average
+    ave_ref = np.mean(data, axis=0)
+    if flag_check:
+        af2.plot(wavelengths, ave_ref, color='red', label='Average ref')
+        plt.legend()
+
+    return ave_ref, wavelengths
