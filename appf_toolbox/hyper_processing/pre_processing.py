@@ -319,21 +319,21 @@ def spectral_resample(source_spectral_sig_array, source_wavelength, destination_
 ########################################################################################################################
 # Green crop segmentation
 ########################################################################################################################
-def crop_segmentation(hyp_data_path,
-                      model_name_vnir='',
-                      model_name_swir='',
-                      model_path='./',
-                      gamma=0.8,
-                      flag_remove_noise=False,
-                      white_offset_top=0.1,
-                      white_offset_bottom=0.9,
-                      band_R=10,
-                      band_G=50,
-                      band_B=150,
-                      flag_save=True,
-                      save_path='./'):
+def green_plant_segmentation(hyp_data_path,
+                              model_name_vnir='',
+                              model_name_swir='',
+                              model_path='./',
+                              gamma=0.8,
+                              flag_remove_noise=False,
+                              white_offset_top=0.1,
+                              white_offset_bottom=0.9,
+                              band_R=10,
+                              band_G=50,
+                              band_B=150,
+                              flag_save=True,
+                              save_path='./'):
     """
-    Conduct crop segmentaion for the WIWAM hyprspectral data uisng pre-trained models.
+    Conduct green plant segmentaion for the WIWAM hyprspectral data uisng pre-trained models.
     :param hyp_data_path: Path of WIWAN hyperspectral data.
     :param model_name_vnir: Crop segmentation model for VNIR data
     :param model_name_swir: Crop segmentation model for SWIR data
@@ -563,7 +563,7 @@ def ave_ref_crop(hyp_path,
         fig1, af1 = plt.subplots(1, 1)
         af1.imshow(data[:, :, band_ind], cmap='gray')
         af1.set_title('Band ' + str(band_ind) + '@' + str(wavelengths[band_ind]) + 'nm')
-        plt.show()
+        # plt.show()
 
     # Reshape and remove zero-rows
     data = data.reshape((data.shape[0] * data.shape[1], data.shape[2]), order='C')
@@ -591,5 +591,6 @@ def ave_ref_crop(hyp_path,
     if flag_check:
         af2.plot(wavelengths, ave_ref, color='red', label='Average ref')
         plt.legend()
+        plt.show()
 
     return ave_ref, wavelengths
