@@ -500,17 +500,17 @@ def green_plant_segmentation(hyp_data_path,
 ########################################################################################################################
 # Calculate the average reflectance of crops.
 ########################################################################################################################
-def ave_ref_crop(hyp_path,
-                 hyp_name,
-                 mask,
-                 flag_smooth=True,
-                 window_length=21,
-                 polyorder=3,
-                 flag_check=False,
-                 band_ind=50,
-                 ref_ind=50,
-                 white_offset_top=0.1,
-                 white_offset_bottom=0.9):
+def ave_ref(hyp_path,
+             hyp_name,
+             mask,
+             flag_smooth=True,
+             window_length=21,
+             polyorder=3,
+             flag_check=False,
+             band_ind=50,
+             ref_ind=50,
+             white_offset_top=0.1,
+             white_offset_bottom=0.9):
     """
     Calculate the average reflectance of crops using a mask (BW); disigned for WIWAM system
     :param hyp_path: The path of the hyperspectral data for processing.
@@ -556,7 +556,7 @@ def ave_ref_crop(hyp_path,
     wavelengths = np.asarray(wavelengths)
     wavelengths = wavelengths.astype(float)
 
-    # Take out crop pixels
+    # Take out pixels under the mask
     data[mask==0]=0
     # Check mask
     if flag_check:
@@ -569,6 +569,10 @@ def ave_ref_crop(hyp_path,
     data = data.reshape((data.shape[0] * data.shape[1], data.shape[2]), order='C')
     zero_row_ind = np.where(~data.any(axis=1))[0]
     data = np.delete(data, zero_row_ind, axis=0)
+
+    # If there are no pixels under the mask, put the data to zeros.
+    if data.size == 0:
+        data = np.zeros((1, wavelengths.shape[0]))
 
     # Check
     if flag_check:
