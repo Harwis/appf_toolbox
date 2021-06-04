@@ -1,6 +1,6 @@
-def match_barcode_pippa():
+def match_wiw_barcode_pippa():
     """
-    Match barcode of the wiwam system to pippa data. 
+    Match barcode of the wiwam system to pippa data.
     """
     import pymysql
     import psycopg2, psycopg2.extras

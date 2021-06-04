@@ -7,9 +7,12 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = '/media/huajian/Files/Data/crown_rot_pilot_0590_data/20210421'
+# folder_path = '/media/huajian/Files/Data/crown_rot_pilot_0590_data/20210428'
+# folder_name = 'vnir_92_130_8073_2021-04-28_04-00-32'
 # folder_name = 'vnir_92_130_8082_2021-04-21_05-21-41'
-folder_name = 'vnir_92_130_8082_2021-04-21_05-21-41'
+
+folder_path = '/media/huajian/Files/Data/VNIR_error_example'
+folder_name = 'vnir_43_54_1790_2018-10-01_22-50-58'
 
 
 # Will read the wavelength on every band_interval

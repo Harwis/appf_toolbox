@@ -4,22 +4,10 @@ from spectral import *
 from matplotlib import pyplot as plt
 
 # Parameters
-path = '/media/huajian/Files/Data/test_shutter/20210506'
-# folder_name = 'vnir_nil_2021-05-26_00-22-51'
-# hdr_name = 'DARKREF_vnir_nil_2021-05-26_00-22-51.hdr'
-# raw_name = 'DARKREF_vnir_nil_2021-05-26_00-22-51.raw'
-
-# folder_name = 'vnir_nil_2021-05-26_00-23-28'
-# hdr_name = 'DARKREF_vnir_nil_2021-05-26_00-23-28.hdr'
-# raw_name = 'DARKREF_vnir_nil_2021-05-26_00-23-28.raw'
-
-# folder_name = 'vnir_nil_2021-05-26_00-24-03'
-# hdr_name = 'DARKREF_vnir_nil_2021-05-26_00-24-03.hdr'
-# raw_name = 'DARKREF_vnir_nil_2021-05-26_00-24-03.raw'
-
-folder_name = 'vnir_nil_2021-05-26_00-35-12'
-hdr_name = 'DARKREF_vnir_nil_2021-05-26_00-35-12.hdr'
-raw_name = 'DARKREF_vnir_nil_2021-05-26_00-35-12.raw'
+path = '/media/huajian/Files/Data/test_shutter/20210531'
+folder_name = 'vnir_nil_2021-05-31_00-50-20'
+hdr_name = 'DARKREF_vnir_nil_2021-05-31_00-50-20.hdr'
+raw_name = 'DARKREF_vnir_nil_2021-05-31_00-50-20.raw'
 
 # Reading data
 meta_dark = envi.open(path + '/' + folder_name + '/' + 'capture' + '/' + hdr_name,
