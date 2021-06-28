@@ -7,12 +7,28 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
-# folder_path = '/media/huajian/Files/Data/crown_rot_pilot_0590_data/20210428'
-# folder_name = 'vnir_92_130_8073_2021-04-28_04-00-32'
+folder_path = '/media/huajian/Files/Data/test_shutter'
+# folder_name = 'vnir_74_103_6113_2019-10-23_04-41-19' # Raw image error
+folder_name = 'vnir_74_104_6114_2019-10-31_00-39-51'
+
+# folder_path = '/media/huajian/Files/Data/VNIR_error_example'
+# folder_name = 'vnir_43_54_1790_2018-10-01_22-50-58' # White mis_alignment, dark error
+# folder_name = 'vnir_43_54_1791_2018-09-11_23-16-14' # white mis_alignment
+
+# folder_path = '/media/huajian/Files/Data/wheat_gene_classification_0528'
+# folder_name = 'vnir_86_121_7559_2020-08-17_03-47-26'
+
+# folder_path = '/media/huajian/Files/Data/test_first_vnir'
+# folder_name = 'vnir_29_27_845_2018-05-04_04-35-38' # white mis-alignment
+# folder_name = 'vnir_29_27_846_2018-05-04_04-37-08'
+
+# folder_path = '/media/huajian/Files/Data/crown_rot_pilot_0590_data/wiw_20210421'
+# folder_name = 'vnir_92_130_8079_2021-04-21_05-20-00'
 # folder_name = 'vnir_92_130_8082_2021-04-21_05-21-41'
 
-folder_path = '/media/huajian/Files/Data/VNIR_error_example'
-folder_name = 'vnir_43_54_1790_2018-10-01_22-50-58'
+# folder_path = '/media/huajian/Files/Data/VNIR_error_example'
+# folder_name = 'vnir_43_54_1790_2018-10-01_22-50-58'
+# folder_name = 'vnir_76_107_6318_2019-12-03_05-58-48'
 
 
 # Will read the wavelength on every band_interval
@@ -83,7 +99,7 @@ ax2.title.set_text('Dark ref')
 ax3 = fig_img.add_subplot(2,2,3)
 ax3.title.set_text('Raw image')
 ax4 = fig_img.add_subplot(2,2,4)
-for ind_band in range(0, n_bands, band_interval):
+for ind_band in range(0, n_bands + 1, band_interval):
     fig_img.suptitle(folder_name + '\n' + str(wavelengths[ind_band]) + ' nm @ band ' + str(ind_band), fontsize=14,
                      fontweight='bold')
 
@@ -102,9 +118,9 @@ for ind_band in range(0, n_bands, band_interval):
     plant_img_cal = plant_cal[:, :, ind_band]
 
     # Show the raw images
-    ax1.imshow(white_img, cmap='gray')
-    ax2.imshow(dark_img, cmap='gray')
-    ax3.imshow(plant_img_raw, cmap='gray')
+    ax1.imshow(white_img, cmap='jet')
+    ax2.imshow(dark_img, cmap='jet')
+    ax3.imshow(plant_img_raw, cmap='jet')
 
     ax4.clear()
     ax4.title.set_text('Calibrated image (yellow noise >1, red noise < 0)')
@@ -119,9 +135,10 @@ for ind_band in range(0, n_bands, band_interval):
     if ind_noise_type2.shape[0] != 0:
         ax4.plot(ind_noise_type2[:, 1], ind_noise_type2[:, 0], 'y+')
 
-    p = plt.pause(1)
-    # import os
-    # os.system('pause')
+    if ind_band == n_bands * band_interval:
+        plt.show()
+    else:
+        plt.pause(1)
 #######################################################################################################################
 
 
