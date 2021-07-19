@@ -21,8 +21,7 @@ z_ind_lida = -4
 # y_ind_lida = -7
 # z_ind_lida = -5
 
-search_radius = 80
-batch_size = 100 # The number of lines to be processed per batch.
+search_radius = 100
 
 # For checking the results
 check_row_1 = 885
@@ -78,7 +77,6 @@ lid_fx17 = hyp_cube_fx17[:, :, -11:].copy()
 hyp_cube_fx17 = hyp_cube_fx17[:, :, 0:-11]
 wave_fx17 = wave_fx17[0:-11]
 
-
 xyz_fx10 = np.concatenate((lid_fx10[:, :, x_ind_lida].reshape((lid_fx10.shape[0], lid_fx10.shape[1], 1)),
                            lid_fx10[:, :, y_ind_lida].reshape((lid_fx10.shape[0], lid_fx10.shape[1], 1)),
                            lid_fx10[:, :, z_ind_lida].reshape((lid_fx10.shape[0], lid_fx10.shape[1], 1))), axis=2)
@@ -122,6 +120,12 @@ if flag_fig:
 # Make a zero-hypercub for save the results of resampling
 hyp_cube_fx17_to_fx10 = np.zeros((hyp_cube_fx10.shape[0], hyp_cube_fx10.shape[1], hyp_cube_fx17.shape[2]))
 
+# For checking purpose only
+record_row_fx17_rough = np.zeros((hyp_cube_fx10.shape[0], hyp_cube_fx10.shape[1]))
+record_col_fx17_rough = np.zeros((hyp_cube_fx10.shape[0], hyp_cube_fx10.shape[1]))
+record_row_fx17_accu = np.zeros((hyp_cube_fx10.shape[0], hyp_cube_fx10.shape[1]))
+record_col_fx17_accu = np.zeros((hyp_cube_fx10.shape[0], hyp_cube_fx10.shape[1]))
+
 # Up sampling FX17 to FX10 resolution
 for row_fx10 in range(0, hyp_cube_fx10.shape[0]):
     for col_fx10 in range(0, hyp_cube_fx10.shape[1]):
@@ -159,8 +163,12 @@ for row_fx10 in range(0, hyp_cube_fx10.shape[0]):
             line4 = ax_f0[1].vlines(x=win_col_rig, ymin=win_row_top, ymax=win_row_bot, color='red')
 
         # Euclidian distance
-        neighbours_xyz_fx17 = xyz_fx17[win_row_top: win_row_bot, win_col_lef: win_col_rig, :]
-        current_xyz_fx10 = np.tile(xyz_fx10[row_fx10, col_fx10].reshape((1, 1, 3)),
+        # neighbours_xyz_fx17 = xyz_fx17[win_row_top: win_row_bot, win_col_lef: win_col_rig, :]
+        # current_xyz_fx10 = np.tile(xyz_fx10[row_fx10, col_fx10].reshape((1, 1, 3)),
+        #                            (neighbours_xyz_fx17.shape[0], neighbours_xyz_fx17.shape[1], 1))
+
+        neighbours_xyz_fx17 = xyz_fx17[win_row_top: win_row_bot, win_col_lef: win_col_rig, 0:2]
+        current_xyz_fx10 = np.tile(xyz_fx10[row_fx10, col_fx10, 0 : 2].reshape((1, 1, 2)),
                                    (neighbours_xyz_fx17.shape[0], neighbours_xyz_fx17.shape[1], 1))
 
         dis = np.sum((current_xyz_fx10 - neighbours_xyz_fx17) ** 2, axis=2)
@@ -168,6 +176,7 @@ for row_fx10 in range(0, hyp_cube_fx10.shape[0]):
         # Target pixel location in FX17 is the pixel return the min distance
         # Target location in the window
         row_col_fx17_target = np.unravel_index(np.argmin(dis), dis.shape, order='C')
+
         # Target location in the pix location of FX17
         row_col_fx17_target = row_col_fx17_target + np.array([win_row_top, win_col_lef])
 
@@ -185,6 +194,12 @@ for row_fx10 in range(0, hyp_cube_fx10.shape[0]):
 
         # Copy the reflectance value of FX17 to fused data.
         hyp_cube_fx17_to_fx10[row_fx10, col_fx10, :] = hyp_cube_fx17[row_col_fx17_target[0], row_col_fx17_target[1], :]
+
+        # Record the rough and accurate pixel location of FX17 for checking.
+        record_row_fx17_rough[row_fx10, col_fx10] = row_fx17_rough
+        record_col_fx17_rough[row_fx10, col_fx10] = col_fx17_rough
+        record_row_fx17_accu[row_fx10, col_fx10] = row_col_fx17_target[0]
+        record_col_fx17_accu[row_fx10, col_fx10] = row_col_fx17_target[1]
 
     print('Row %d (%.2f percent) finished.' % (row_fx10, (row_fx10 / hyp_cube_fx10.shape[0]) * 100))
 
@@ -221,10 +236,10 @@ ax_f2[1].set_title('Reflectance')
 ax_f2[1].set_xlabel('Wavelength (nm)')
 ax_f2[1].set_ylabel('Reflectance')
 
-f1, ax_f1 = plt.subplots(1, 1)
+f2, ax_f2 = plt.subplots(1, 1)
 diff = compare_images(np.asarray(hyp_cube_fx10)[:, :, -1], fused_hypcube[:, :, 222], method='diff')
-ax_f1.set_title('Compare the difference of the original and fused image')
-ax_f1.imshow(diff, cmap='jet')
+ax_f2.set_title('Compare the difference of the original and fused image')
+ax_f2.imshow(diff, cmap='jet')
 plt.show()
 
 
@@ -234,10 +249,16 @@ plt.show()
 if flag_save:
     dict = {'fused_hypcube': fused_hypcube,
             'fused_wave': fused_wave,
-            'xyz': xyz_fx10}
+            'xyz': xyz_fx10,
+            'search_radius': search_radius,
+            'row_fx17_rough': record_row_fx17_rough,
+            'col_fx17_rough': record_col_fx17_rough,
+            'row_fx17_accurate': record_col_fx17_accu,
+            'col_fx17_accurate': record_col_fx17_accu}
 
     joblib.dump(dict, 'fuse_fx17_to_fx10_' + data_name_fx10[-16:-4] + '.sav')
 
 print('Data saved.')
+
 
 
