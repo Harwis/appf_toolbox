@@ -6,7 +6,7 @@ from appf_toolbox.hyper_processing import pre_processing as pp
 
 
 # Parameters
-data_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
+data_path = '../appf_toolbox_demo_data'
 data_name = 'grass_vnir_n.sav'
 data_id = 10
 window_length = 11
