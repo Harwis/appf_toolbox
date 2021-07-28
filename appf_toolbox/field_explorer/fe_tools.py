@@ -286,9 +286,9 @@ def fuse_subregion_fx17_to_fx10(data_path,
     fused_hypcube = np.concatenate((hypcube_fx10, hypcube_fx17_to_fx10), axis=2)
 
     # After finishing the processing, save the data to dictionary.
-    dict = {'hypcube': fused_hypcube,
+    dict = {'fused_hypcube': fused_hypcube,
             'xyz': xyz_fx10,
-            'wavelength': fused_wave,
+            'fused_wave': fused_wave,
             'start_line_fx10': sta_line_fx10,
             'end_line_fx10': end_line_fx10,
             'start_line_fx17': sta_line_fx17,
@@ -299,10 +299,7 @@ def fuse_subregion_fx17_to_fx10(data_path,
             'col_fx17_accurate': record_global_col_fx17_accu,
             'search_radius': search_radius,
             'data_name_fx10': data_name_fx10,
-            'data_name_fx17': data_name_fx17,
-            'nei_fx17': neighbours_xy_fx17,
-            'cur_fx10': current_xy_fx10,
-            'win_row_co': win_row_col_fx17}
+            'data_name_fx17': data_name_fx17}
 
     if flag_save:
         from sklearn.externals import joblib

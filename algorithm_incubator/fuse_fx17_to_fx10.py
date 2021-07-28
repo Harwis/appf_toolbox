@@ -253,7 +253,7 @@ if flag_save:
             'search_radius': search_radius,
             'row_fx17_rough': record_row_fx17_rough,
             'col_fx17_rough': record_col_fx17_rough,
-            'row_fx17_accurate': record_col_fx17_accu,
+            'row_fx17_accurate': record_row_fx17_accu,
             'col_fx17_accurate': record_col_fx17_accu}
 
     joblib.dump(dict, 'fuse_fx17_to_fx10_' + data_name_fx10[-16:-4] + '.sav')
