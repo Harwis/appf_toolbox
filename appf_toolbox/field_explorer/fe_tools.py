@@ -71,6 +71,8 @@ def read_xyz(data_path, data_name, flag_show_result=False):
         a[2].set_title('z ' + 'min: ' + str(np.round(np.min(z), 4)) + ' max: ' + str(np.max(z)))
         plt.show()
 
+    return xyz
+
 
 ########################################################################################################################
 # fuse_subregion_fx17_to_fx10()
@@ -90,7 +92,8 @@ def fuse_subregion_fx17_to_fx10(data_path,
                                 flag_print_progress=True,
                                 flag_save=False,
                                 name_save='',
-                                folder_save=''):
+                                folder_save='',
+                                flag_debug=False):
 
     """
     Fuse a subregion of FX17 data to FX10 data of the FieldExplore.
@@ -103,9 +106,6 @@ def fuse_subregion_fx17_to_fx10(data_path,
     :param sta_line_fx10: Starting line for processing in FX10 data. Counted from 0.
     :param end_line_fx10: Ending line for processing in FX10 data. Counted from 0.
     :param search_radius: The search wind radius in the FX17 data. This is used for speed up processing. Default is 80.
-    :param x_ind_lida: The x index of LiDar value. Default is -8. Indies of xyz is (-8, -6, -4) or (-9, -7, -5).
-    :param y_ind_lida: The y index of LiDar value. Default is -6.
-    :param z_ind_lida: The z index of LiDar value. Default is -5.
     :param flag_check: If set this flag to True, it will show a figure of fusion result
     :param check_row: The row number for checking in FX10. Default is 0.
     :param check_col: The col number for checking in FX10. Default is 0.
@@ -191,16 +191,19 @@ def fuse_subregion_fx17_to_fx10(data_path,
                                                   (list(range(0, wave_fx10.shape[0]))))
     hypcube_fx10 = hypcube_fx10.astype(np.float)
 
-    # Load LiDar data of fx10 from sta_line to end_line
+    # Load xyz data
     # First, convert indices of LiDar data to positive numbers
-    x_ind_lida_fx10 = meta_data_fx10.nbands + x_ind_lida
-    y_ind_lida_fx10 = meta_data_fx10.nbands + y_ind_lida
-    z_ind_lida_fx10 = meta_data_fx10.nbands + z_ind_lida
+    # x_ind_lida_fx10 = meta_data_fx10.nbands + x_ind_lida
+    # y_ind_lida_fx10 = meta_data_fx10.nbands + y_ind_lida
+    # z_ind_lida_fx10 = meta_data_fx10.nbands + z_ind_lida
 
-    xyz_fx10 = meta_data_fx10.read_subimage(list(range(sta_line_fx10, end_line_fx10 + 1)),
-                                            list(range(0, meta_data_fx10.ncols)),
-                                            [x_ind_lida_fx10, y_ind_lida_fx10, z_ind_lida_fx10])
-    xyz_fx10 = xyz_fx10.astype(np.float)
+    # xyz_fx10 = meta_data_fx10.read_subimage(list(range(sta_line_fx10, end_line_fx10 + 1)),
+    #                                         list(range(0, meta_data_fx10.ncols)),
+    #                                         [x_ind_lida_fx10, y_ind_lida_fx10, z_ind_lida_fx10])
+    # xyz_fx10 = xyz_fx10.astype(np.float)
+
+    xyz_fx10 = read_xyz(data_path, data_name_fx10)[sta_line_fx10:end_line_fx10 + 1, :, :]
+    xyz_fx17 = read_xyz(data_path, data_name_fx17)[:, :, 0:3]
 
 
     # ==================================================================================================================
@@ -269,59 +272,147 @@ def fuse_subregion_fx17_to_fx10(data_path,
                 # The distances between between the current xy of fx10 to the xy in the window of fx17
                 # ......................................................................................................
                 # xy in the window of fx17.
-                x_ind_lida_fx17 = meta_data_fx17.nbands + x_ind_lida
-                y_ind_lida_fx17 = meta_data_fx17.nbands + y_ind_lida
+                # x_ind_lida_fx17 = meta_data_fx17.nbands + x_ind_lida
+                # y_ind_lida_fx17 = meta_data_fx17.nbands + y_ind_lida
 
-                neighbours_xy_fx17 = meta_data_fx17.read_subimage(list(range(win_row_top, win_row_bot + 1)),
-                                                                  list(range(win_col_lef, win_col_rig + 1)),
-                                                                  [x_ind_lida_fx17, y_ind_lida_fx17])
-                neighbours_xy_fx17 = neighbours_xy_fx17.astype(np.float)
+                # neighbours_xy_fx17 = meta_data_fx17.read_subimage(list(range(win_row_top, win_row_bot + 1)),
+                #                                                   list(range(win_col_lef, win_col_rig + 1)),
+                #                                                   [x_ind_lida_fx17, y_ind_lida_fx17])
+                # neighbours_xy_fx17 = neighbours_xy_fx17.astype(np.float)
+                neighbours_xyz_fx17 = xyz_fx17[win_row_top:win_row_bot + 1, win_col_lef:win_col_rig + 1, :]
 
                 # print('nei fx17: ', neighbours_xy_fx17)
                 # Tile the current xy of fx10 for computing the distance
-                current_xy_fx10 = np.tile(xyz_fx10[local_row_fx10, local_col_fx10, 0 : 2].reshape((1, 1, 2)),
-                                           (neighbours_xy_fx17.shape[0], neighbours_xy_fx17.shape[1], 1))
+                current_xy_fx10 = np.tile(xyz_fx10[local_row_fx10, local_col_fx10, 0 : 3].reshape((1, 1, 3)),
+                                           (neighbours_xyz_fx17.shape[0], neighbours_xyz_fx17.shape[1], 1))
 
-                dis = np.sum((current_xy_fx10 - neighbours_xy_fx17) ** 2, axis=2)
+                dis = np.sum((current_xy_fx10 - neighbours_xyz_fx17) ** 2, axis=2)
 
                 # ......................................................................................................
                 # Accurate pixel location in fx17
                 # ......................................................................................................
                 # The pixel location in the window of fx17 returning the minimum distance.
-                win_row_col_fx17 = np.unravel_index(np.argmin(dis), dis.shape, order='C')
+                win_row_col_fx17_accu = np.unravel_index(np.argmin(dis), dis.shape, order='C')
 
-                # dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
-                # For debug
-                if plt.fignum_exists(10):
-                    pass
-                else:
-                    f_dis = plt.figure(10)
-
-                # Shown the image of distance
-                a_f_dis = f_dis.add_subplot(111)
-                a_f_dis.imshow(dis, cmap='jet')
-
-                # The centre of the search window
-                a_f_dis.scatter(search_radius, search_radius, marker='o', color='white')
-                a_f_dis.scatter(search_radius, search_radius, marker='+', color='red')
-
-                # The row and col in the window returning the min dis
-                a_f_dis.scatter(win_row_col_fx17[1], win_row_col_fx17[0], marker='o', color='white')
-                a_f_dis.scatter(win_row_col_fx17[1], win_row_col_fx17[0], marker='+', color='blue')
-
-                # Check the difference
-                a_f_dis.set_title('radius: ' + str(search_radius) + ' ' +
-                                  'row_diff: ' + str(np.abs(win_row_col_fx17[0] - search_radius)) + ' ' +
-                                  'col_diff: ' + str(np.abs(win_row_col_fx17[1] - search_radius)))
-                plt.pause(1)
-
-                a_f_dis.remove()
-                # dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
 
                 # The corresponding global (accurate) pixel location of FX17
-                global_row_col_fx17_accu = win_row_col_fx17 + np.array([win_row_top, win_col_lef])
+                global_row_col_fx17_accu = win_row_col_fx17_accu + np.array([win_row_top, win_col_lef])
                 # print('accu', global_row_col_fx17_accu )
                 # print('roug',[global_row_fx17_rough, global_col_fx17_rough])
+
+                # Debug start ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                if flag_debug:
+                    if plt.fignum_exists(10):
+                        pass
+                    else:
+                        f_debug = plt.figure(10)
+
+                        a_x_fx10 = f_debug.add_subplot(231)
+                        a_x_fx10.imshow(xyz_fx10[:, :, 0], cmap='jet')
+                        a_x_fx10.set_title('x of fx10')
+
+                        a_x_fx17 = f_debug.add_subplot(232)
+                        a_x_fx17.imshow(xyz_fx17[:, :, 0], cmap='jet')
+                        a_x_fx17.set_title('x of fx17')
+
+                        a_y_fx10 = f_debug.add_subplot(234)
+                        a_y_fx10.imshow(xyz_fx10[:, :, 1], cmap='jet')
+                        a_y_fx10.set_title('y of fx10')
+
+                        a_y_fx17 = f_debug.add_subplot(235)
+                        a_y_fx17.imshow(xyz_fx17[:, :, 1], cmap='jet')
+                        a_y_fx17.set_title('y of fx17')
+
+                        a_hyp_fx10 = f_debug.add_subplot(233)
+                        a_hyp_fx10.imshow(hypcube_fx10[:, :, 100], cmap='jet')
+
+                        a_dis = f_debug.add_subplot(236)
+
+                    # Show the current pixel in x-image of fx10
+                    sca_x_fx10_1 = a_x_fx10.scatter(local_col_fx10, local_row_fx10, marker='o', color='white')
+                    sca_x_fx10_2 = a_x_fx10.scatter(local_col_fx10, local_row_fx10, marker='+', color='red')
+
+                    # Show the rough and accurate pixel in x-image of fx17
+                    sca_x_fx17_1 = a_x_fx17.scatter(global_col_fx17_rough, global_row_fx17_rough, marker='o',
+                                                    color='white')
+                    sca_x_fx17_2 = a_x_fx17.scatter(global_col_fx17_rough, global_row_fx17_rough, marker='+',
+                                                    color='red')
+                    sca_x_fx17_3 = a_x_fx17.scatter(global_row_col_fx17_accu[1], global_row_col_fx17_accu[0],
+                                                    marker='o', color='white')
+                    sca_x_fx17_4 = a_x_fx17.scatter(global_row_col_fx17_accu[1], global_row_col_fx17_accu[0],
+                                                    marker='+', color='blue')
+
+                    # Show the current pixel in y-image of fx10
+                    sca_y_fx10_1 = a_y_fx10.scatter(local_col_fx10, local_row_fx10, marker='o', color='white')
+                    sca_y_fx10_2 = a_y_fx10.scatter(local_col_fx10, local_row_fx10, marker='+', color='red')
+
+                    # Show the rough and accurate pixel in y-image of fx17
+                    sca_y_fx17_1 = a_y_fx17.scatter(global_col_fx17_rough, global_row_fx17_rough, marker='o',
+                                                    color='white')
+                    sca_y_fx17_2 = a_y_fx17.scatter(global_col_fx17_rough, global_row_fx17_rough, marker='+',
+                                                    color='red')
+                    sca_y_fx17_3 = a_y_fx17.scatter(global_row_col_fx17_accu[1], global_row_col_fx17_accu[0],
+                                                    marker='o', color='white')
+                    sca_y_fx17_4 = a_y_fx17.scatter(global_row_col_fx17_accu[1], global_row_col_fx17_accu[0],
+                                                    marker='+', color='blue')
+
+                    # Show the current pixel in the hyp-image of fx10
+                    a_hyp_fx10.set_title('Current [row, col] of fx10: ' +
+                                       '[' + str(local_row_fx10) + ',' + str(local_col_fx10) + ']')
+                    sca_hyp_fx10_1 = a_hyp_fx10.scatter(local_col_fx10, local_row_fx10, marker='o', color='white')
+                    sca_hyp_fx10_2 = a_hyp_fx10.scatter(local_col_fx10, local_row_fx10, marker='+', color='red')
+
+                    # Difference of accurate and rough location
+                    deta_row = global_row_col_fx17_accu[0] - global_row_fx17_rough
+                    deta_col = global_row_col_fx17_accu[1] - global_col_fx17_rough
+
+                    # The rough location in the window
+                    win_row_fx17_rough = win_row_col_fx17_accu[0] - deta_row
+                    win_col_fx17_rough = win_row_col_fx17_accu[1] - deta_col
+
+                    # Shown the distance-image in the search window
+                    show_dis = a_dis.imshow(dis, cmap='jet')
+
+                    a_dis.set_title('radius: ' + str(search_radius) + ' ' +
+                                    'row_diff: ' + str(deta_row) + ' ' +
+                                    'col_diff: ' + str(deta_col))
+
+                    # Plot rough location in the search window (red)
+                    sca_dis_1 = a_dis.scatter(win_col_fx17_rough, win_row_fx17_rough, marker='o', color='white')
+                    sca_dis_2 = a_dis.scatter(win_col_fx17_rough, win_row_fx17_rough, marker='+', color='red')
+
+                    # Plot the accurate row and col in the window (blue)
+                    sca_dis_3 = a_dis.scatter(win_row_col_fx17_accu[1], win_row_col_fx17_accu[0],
+                                              marker='o', color='white')
+                    sca_dis_4 = a_dis.scatter(win_row_col_fx17_accu[1], win_row_col_fx17_accu[0],
+                                              marker='+', color='blue')
+
+                    if deta_row > 40 or deta_col > 40:
+                        plt.pause(20)
+                    else:
+                        plt.pause(1)
+
+                    sca_x_fx10_1.remove()
+                    sca_x_fx10_2.remove()
+                    sca_x_fx17_1.remove()
+                    sca_x_fx17_2.remove()
+                    sca_x_fx17_3.remove()
+                    sca_x_fx17_4.remove()
+                    sca_y_fx10_1.remove()
+                    sca_y_fx10_2.remove()
+                    sca_y_fx17_1.remove()
+                    sca_y_fx17_2.remove()
+                    sca_y_fx17_3.remove()
+                    sca_y_fx17_4.remove()
+                    sca_hyp_fx10_1.remove()
+                    sca_hyp_fx10_2.remove()
+                    sca_dis_1.remove()
+                    sca_dis_2.remove()
+                    sca_dis_3.remove()
+                    sca_dis_4.remove()
+                    show_dis.remove()
+
+                # Debug end dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
 
             # ----------------------------------------------------------------------------------------------------------
             # Copy the reflectance value of FX17 at current pixel to the corresponding pixel of fx10 data.
@@ -390,7 +481,7 @@ def fuse_subregion_fx17_to_fx10(data_path,
 
     end_time = datetime.now()
     print('Fusion finished. Total time used:', end_time - start_time)
-    print('Average time per line: ', (end_time - start_time) / (end_line_fx10 - sta_line_fx17 + 1) )
+    # print('Average time per line: ', (end_time - start_time) / (end_line_fx10 - sta_line_fx17 + 1) )
 
     # ==================================================================================================================
     # Check
@@ -444,9 +535,9 @@ def fuse_fx17_to_fx10(data_path,
                       data_name_fx10,
                       batch_size = 100,
                       search_radius = 100,
-                      x_ind_lida = -8,
-                      y_ind_lida = -6,
-                      z_ind_lida = -4,
+                      # x_ind_lida = -8,
+                      # y_ind_lida = -6,
+                      # z_ind_lida = -4,
                       flag_check=False,
                       check_row=0,
                       check_col=0,
@@ -502,9 +593,9 @@ def fuse_fx17_to_fx10(data_path,
                                                  sta_line_fx10=sta_line,
                                                  end_line_fx10=end_line,
                                                  search_radius=search_radius,
-                                                 x_ind_lida=x_ind_lida,
-                                                 y_ind_lida=y_ind_lida,
-                                                 z_ind_lida=z_ind_lida,
+                                                 # x_ind_lida=x_ind_lida,
+                                                 # y_ind_lida=y_ind_lida,
+                                                 # z_ind_lida=z_ind_lida,
                                                  flag_check=flag_check,
                                                  check_row=check_row,
                                                  check_col=check_col,
@@ -522,49 +613,50 @@ def fuse_fx17_to_fx10(data_path,
 # Demostration
 ########################################################################################################################
 if __name__ == "__main__":
-    # data_path = '/media/huajian/Files/Data/FE_night_trial'
-    # data_name_fx10 = 'Combined_SpecimFX10_TPA_SILO_1_20210518-003.cmb'
-    # data_name_fx17 = 'Combined_SpecimFX17_TPA_SILO_1_20210518-003.cmb'
-    #
+    data_path = '/media/huajian/Files/Data/FE_night_trial'
+    data_name_fx10 = 'Combined_SpecimFX10_TPA_SILO_1_20210518-003.cmb'
+    data_name_fx17 = 'Combined_SpecimFX17_TPA_SILO_1_20210518-003.cmb'
+    # data_name_fx10 = 'Combined_SpecimFX10_TPA_SILO_2_20210518-002.cmb'
+    # data_name_fx17 = 'Combined_SpecimFX17_TPA_SILO_2_20210518-002.cmb'
+
     # # Demo of fuse_subregion_fx17_to_fx10
     # print(fuse_subregion_fx17_to_fx10.__doc__)
     # fused_data = fuse_subregion_fx17_to_fx10(data_path,
     #                                         data_name_fx17,
     #                                         data_name_fx10,
-    #                                         sta_line_fx10 = 1000,
-    #                                         end_line_fx10 = 1499,
-    #                                         search_radius=300,
+    #                                         sta_line_fx10 = 1500,
+    #                                         end_line_fx10 = 1999,
+    #                                         search_radius=50,
     #                                         # x_ind_lida=-8,
     #                                         # y_ind_lida=-6,
     #                                         # z_ind_lida=-4,
-    #                                         flag_check=False,
+    #                                         flag_check=True,
     #                                         check_row=50,
     #                                         check_col=400,
     #                                         flag_print_progress=True,
-    #                                         flag_save=True)
+    #                                         flag_save=False,
+    #                                         flag_debug=True)
 
-    # # Demo of fuse_fx17_to_fx10
-    # print(fuse_fx17_to_fx10.__doc__)
-    # fuse_fx17_to_fx10(data_path,
-    #                   data_name_fx17,
-    #                   data_name_fx10,
-    #                   batch_size=500,
-    #                   search_radius=50,
-    #                   x_ind_lida=-8,
-    #                   y_ind_lida=-6,
-    #                   z_ind_lida=-4,
-    #                   flag_check=False,
-    #                   check_row=50,
-    #                   check_col=400,
-    #                   flag_print_progress=True,
-    #                   flag_save=True,
-    #                   name_save='',
-    #                   folder_save='TPA_SILO_1_win50')
+    # Demo of fuse_fx17_to_fx10
+    print(fuse_fx17_to_fx10.__doc__)
+    fuse_fx17_to_fx10(data_path,
+                      data_name_fx17,
+                      data_name_fx10,
+                      batch_size=500,
+                      search_radius=1,
+                      # x_ind_lida=-8,
+                      # y_ind_lida=-6,
+                      # z_ind_lida=-4,
+                      flag_check=False,
+                      check_row=50,
+                      check_col=400,
+                      flag_print_progress=True,
+                      flag_save=True,
+                      name_save='',
+                      folder_save='TPA_SILO_1_r1')
 
 
-    # Demo of read_xyz()
-    data_path = "D:/FE_0545_examples"
-    data_name = "Combined_SpecimFX10_NM_3176_20200731-001.cmb"
-    read_xyz(data_path, data_name, flag_show_result=True)
+    # # Demo of read_xyz()
+    # xyz = read_xyz(data_path, data_name_fx17, flag_show_result=True)
 
 
