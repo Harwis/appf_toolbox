@@ -136,8 +136,7 @@ def plot_regression_result(lab, pre):
 ########################################################################################################################
 def plot_samples_with_colourbar(samples, labels, wavelengths, input_type='Input data values', title='Title'):
     """
-    Plot the samples (reflectance values with a colourbard which is defined by the values of lable. This function is
-    convenient to observe the curves of the reflectance changing with the values of label.
+    Plot the samples (reflectance values) with a colour bar which is defined by the values of the labels.
 
     :param samples: input data array; usually reflectance values
     :param labels: the values of the labels (the parameter need to be measured)
@@ -167,6 +166,8 @@ def plot_samples_with_colourbar(samples, labels, wavelengths, input_type='Input 
         plt.figure()
         plt.title(title)
         for i in range(samples.shape[0]):
+            print(samples[i])
+            print(wavelengths)
             plt.plot(wavelengths, samples[i], c=cmap.to_rgba(labels[i]), alpha=1)
         plt.colorbar(cmap,
                      ticks=np.linspace(np.round(labels.min(), decimals=3), np.round(labels.max(), decimals=3), 10))

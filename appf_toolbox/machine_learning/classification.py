@@ -1,188 +1,249 @@
-from sklearn.svm import SVC
-# from sklearn.svm import SVR
-from sklearn.metrics import classification_report, confusion_matrix
-import optunity.metrics
+########################################################################################################################
+def plot_samples_with_colourbar(samples, labels, wavelengths=[], input_type='Input data values', title='Title'):
+    """
+    Plot the samples (reflectance values) with a colour bar which is defined by the values of the labels.
 
-def bi_svm_rbf(sample_train, label_train, sample_test, lable_test, C_range, gamma_range,
-               num_iter_inner_cv, num_fold_inner_cv, num_evals_inner):
+    :param samples: input data array; usually reflectance values
+    :param labels: the values of the labels (the parameter need to be measured)
+    :param x_axis_value: the x_axis_value in the plot; default is [] which will lead to x axis values of 1, 2, 3 ......
+    :param input_type: reflectance, pca, etc
+    :param title: title for plot
+    :return: return 0 if no errors
+    """
+    from matplotlib import pyplot as plt
+    import matplotlib as mpl
+    import numpy as np
 
-    # sklearn.svm.SVC parameters:
-    # C: Penalty parameter C of the error term. Default = 1.0
-    # gamma: Kernel coefficient for 'rbf', poly and sigmoid. float, optional, default ='auto'
-    # tol: float, optional, default = 1e-3
+
+    # n_lines = 5
+    # x = np.linspace(0, 10, 100)
+    # y = np.sin(x[:, None] + np.pi * np.linspace(0, 1, n_lines))
+    # c = np.arange(1., n_lines + 1)
+    #
+    # cmap = plt.get_cmap("jet", len(c))
+    # norm = colors.BoundaryNorm(np.arange(len(c) + 1) + 0.5, len(c))
+    # sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    # sm.set_array([])  # this line may be ommitted for matplotlib >= 3.1
+    #
+    # fig, ax = plt.subplots(dpi=100)
+    # for i, yi in enumerate(y.T):
+    #     ax.plot(x, yi, c=cmap(i))
+    # fig.colorbar(sm, ticks=c)
+    # plt.show()
+
+    uni_label = np.unique(labels)
+    cmap = plt.get_cmap('jet', len(uni_label))
+    norm = mpl.colors.BoundaryNorm(np.arange(len(uni_label) + 1)-0.5, len(uni_label))
+    sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    sm.set_array([])
+
+    if wavelengths == []:
+        plt.figure()
+        plt.title(title)
+        for i in range(samples.shape[0]):
+            ind_color = np.where(uni_label == labels[i])[0][0]
+            plt.plot(samples[i], c=cmap(ind_color))
+        plt.xlabel('Dimensions of ' + input_type, fontsize=12, fontweight='bold')
+    else:
+        plt.figure()
+        plt.title(title)
+        for i in range(samples.shape[0]):
+            ind_color = np.where(uni_label == labels[i])[0][0]
+            plt.plot(wavelengths, samples[i], c=cmap(ind_color))
+        plt.xlabel('Wavelengths (nm)', fontsize=12, fontweight='bold')
+
+    plt.colorbar(sm, ticks=uni_label)
+    plt.ylabel(input_type, fontsize=12, fontweight='bold')
+
+
+def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, random_state=0,
+                       flag_save=False,
+                       file_name_save='cv_record'):
+    """
+    Perform repeated k-folds cross validation of classification. V1.0 only tested for binary classification.
+
+    :param input: Input data in the format of 2D numpy array.
+    :param label: The ground-trued labels. 1D numpy array in int.
+    :param n_splits: The number of splits for cross validation
+    :param n_repeats: The number of repeat for cross validation.
+    :param tune_model: The function for tuning the models.
+    :param karg: Key words arguments for tune_model()
+    :param random_state: Random state for cross-validation. Default is 0
+    :param flag_save: Flag to save the record. If set to True, it will save the record as a .save file in the present
+           working directory. Default is False
+    :param file_name_save: The file name to save the record. Default is 'cv_record'.
+    :return: The record of repeated cross validation.
+
+     Version 1.0 Date: Aug 25, 2021 Tested for binary classification.
+     Author: Huajian Liu huajian.liu@adelaide.edu.au
+    """
+
+    from sklearn.model_selection import RepeatedKFold
+    import sklearn.metrics as met
+    import numpy as np
+    import joblib
+    from datetime import datetime
+
+    rkf = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=random_state)
+    
+    # For record the result of each cross validation
+    record_each_cv = {'confusion_matrix': [],
+                      'recall': [],
+                      'precision': [],
+                      'f1': [],
+                      'accuracy': [],
+                      'num_pos_neg': []}
+
+    # Performing cross validation
+    count_cv = 1
+    for train_ind, val_index in rkf.split(input):
+        print('')
+        print('==========cross validation ' + str(count_cv) + '==========')
+
+        # Train
+        tuned_model = tune_model(input[train_ind], label[train_ind], **karg)
+        print('Tuned model:')
+        print(tuned_model)
+
+        # Prediction
+        output_val = tuned_model.predict(input[val_index])
+
+        # Confusion matrix
+        conf_max = met.confusion_matrix(label[val_index], output_val)
+        print('confusion matrix:')
+        print(conf_max)
+        record_each_cv['confusion_matrix'].append(conf_max)
+
+        # Recall
+        recall = met.recall_score(label[val_index], output_val)
+        print('Recall:', recall)
+        record_each_cv['recall'].append(recall)
+
+        # Precision
+        precision = met.precision_score(label[val_index], output_val)
+        print('Precision:', precision)
+        record_each_cv['precision'].append(precision)
+
+        # f1 score
+        f1 = met.f1_score(label[val_index], output_val)
+        print('f1 score', f1)
+        record_each_cv['f1'].append(f1)
+
+        # Accuracy
+        accuracy = met.accuracy_score(label[val_index], output_val)
+        print('Accuracy', accuracy)
+        record_each_cv['accuracy'].append(accuracy)
+
+        # Number of positive and negative samples in validation
+        num_pos = np.sum(label[val_index])
+        num_neg = label[val_index].shape[0] - num_pos
+        print('The number of positive and negative samples ', (num_pos, num_neg))
+        record_each_cv['num_pos_neg'].append((num_pos, num_neg))
+
+        count_cv += 1
+
+    print()
+    print('Summyar of ' + str(n_splits) + '-fold cross validation with ' + str(n_repeats) + ' repeats')
+
+    # Average confusion matrix
+    ave_con_mat = record_each_cv['confusion_matrix']
+    ave_con_mat = np.asarray(ave_con_mat)
+    ave_con_mat = np.mean(ave_con_mat, axis=0)
+    ave_con_mat = np.round(ave_con_mat)
+    print('Average confusion matrix: ')
+    print(ave_con_mat)
+
+    # Average recall
+    ave_recall = record_each_cv['recall']
+    ave_recall = np.asarray(ave_recall)
+    ave_recall = np.mean(ave_recall, axis=0)
+    print('Average recall: ', ave_recall)
+
+    # Average precision
+    ave_precision = record_each_cv['precision']
+    ave_precision = np.asarray(ave_precision)
+    ave_precision = np.mean(ave_precision, axis=0)
+    print('Average precision: ', ave_precision)
+
+    # Average f1 score
+    ave_f1 = record_each_cv['f1']
+    ave_f1 = np.asarray(ave_f1)
+    ave_f1 = np.mean(ave_f1, axis=0)
+    print('Average f1 score: ', ave_f1)
+
+    # Average accuracy
+    ave_accuracy = record_each_cv['accuracy']
+    ave_accuracy = np.asarray(ave_accuracy)
+    ave_accuracy = np.mean(ave_accuracy, axis=0)
+    print('Average accuracy: ', ave_accuracy)
+
+    # The number of samples of each class; total samples
+    classes, counts = np.unique(label, return_counts=True)
+    total_samples = label.shape[0]
+    print('Total samples: ', total_samples)
+    print('Classes:', classes)
+    print('Count in each classes: ', counts)
+
+    # Train a final model using all of the data
+    final_model = tune_model(input, label, **karg)
+
+    record = {'record of each cv': record_each_cv,
+              'average confusion matrix': ave_con_mat,
+              'average recall': ave_recall,
+              'average f1': ave_f1,
+              'average accuracy': ave_accuracy,
+              'total samples': total_samples,
+              'classes: ': classes,
+              'count in each classes': counts,
+              'final model': final_model}
+
+    if flag_save:
+        file_name_save = file_name_save + '_' + datetime.now().strftime('%y-%m-%d-%H-%M-%S') + '.sav'
+        joblib.dump(record, file_name_save)
+
+    return record
+
+
+def tune_svm_classification(input,
+                            label,
+                            svm_kernel='rbf',
+                            svm_c_range=[1, 100],
+                            svm_gamma_range=[1, 50],
+                            svm_tol=1e-3,
+                            opt_num_iter_cv=5,
+                            opt_num_fold_cv=5,
+                            opt_num_evals=5):
+    """
+    Tune a support vector machine classificaition model based on sklearn.svm.SVC
+    :param input: The input data for training the model. 2D numpy array
+    :param label: The ground-trued labels for training the model. 1D numpy array in int.
+    :param svm_kernel: The kernel function of SVM. Refer to sklearn.svm.SVC
+    :param svm_c_range: The searching range of C of sklearn.svm.SVC. Default is [1, 100]
+    :param svm_gamma_range: The searching range of gamma of sklearn.svm.SVC. Defaul is [1, 50]
+    :param svm_tol: The tol value of sklearn.svm.SVC.
+    :param opt_num_iter_cv: The number of iteration of cross validation of optunity.
+    :param opt_num_fold_cv: The number of fold of cross validation of optunity.
+    :param opt_num_evals: The number of evaluation of optunity.
+    :return: A tuned SVM model for binary classification.
+
+    Author: Huajina Liu email: huajina.liu@adelaide.edu.au
+    Version: 1.0 Date: August 20, 2021
+    """
+    from sklearn.svm import SVC
+    import optunity.metrics
 
     # Search the optimal parameters
-    @optunity.cross_validated(x=sample_train, y=label_train, num_iter=num_iter_inner_cv, num_folds=num_fold_inner_cv)
+    @optunity.cross_validated(x=input, y=label, num_iter=opt_num_iter_cv, num_folds=opt_num_fold_cv)
     def tune_cv(x_train, y_train, x_test, y_test, C, gamma):
-        model = SVC(kernel='rbf', C=C, gamma=gamma)
+        model = SVC(kernel=svm_kernel, C=C, gamma=gamma, tol=svm_tol)
         model.fit(x_train, y_train)
         predictions = model.predict(x_test)
-        return optunity.metrics.error_rate(y_test, predictions)
+        return optunity.metrics.error_rate(y_test, predictions) # error_rate = 1.0 - accuracy(y, yhat)
 
-    optimal_pars, _, _ = optunity.minimize(tune_cv, num_evals=num_evals_inner, C=C_range, gamma=gamma_range)
+    optimal_pars, _, _ = optunity.minimize(tune_cv, num_evals=opt_num_evals, C=svm_c_range, gamma=svm_gamma_range)
 
-    tuned_model = SVC(**optimal_pars).fit(sample_train, label_train)
-
-    # svc_rbf = SVC(kernel='rbf')
-    # svc_rbf.fit(sample_train, label_train)
-
-    label_pre = tuned_model.predict(sample_test)
-    return {'Parameters': optimal_pars,
-            'Confusion matrix': confusion_matrix(lable_test, label_pre),
-            'Classification report': classification_report(lable_test, label_pre),
-            'tuned_model': tuned_model}
+    # Train a model using the optimal parameters
+    tuned_model = SVC(**optimal_pars).fit(input, label)
+    return tuned_model
 
 
-
-
-
-
-
-
-from mxnet import nd, autograd, gluon
-import mxnet as mx
-import numpy as np
-
-
-def bi_nn(samples_train, labels_train, samples_test, labels_test, batch_size, epochs, learning_rate):
-    """Define a nn model for binary classification and then test the model."""
-
-    data_ctx = mx.gpu()
-    model_ctx = mx.gpu()
-
-    # Note mxnet.ndarray is similar to numpy.ndarray in some aspects. But the differences are not negligible. For instance:
-    # mxnet.ndarray.NDArray.T does real data transpose to return new a copied array, instead of returning a view of the
-    # input array. mxnet.ndarray.dot performs dot product between the last axis of the first input array and the first axis
-    # of the second input, while numpy.dot uses the second last axis of the input array. In addition, mxnet.ndarray.NDArray
-    # supports GPU computation and various neural network layers.
-
-    # !! Lables should be reshaped,
-    labels_train = np.reshape(labels_train, (labels_train.size, 1))
-    labels_test = np.reshape(labels_test, (labels_test.size, 1))
-
-    samples_train = nd.array(samples_train)
-    labels_train = nd.array(labels_train)
-    samples_test = nd.array(samples_test)
-    labels_test = nd.array(labels_test)
-
-    ########################################################################################################################
-    # Define a nn model and trainer; loss function
-    # Instantiage a data loader
-    train_data = gluon.data.DataLoader(gluon.data.ArrayDataset(samples_train, labels_train),
-                                       batch_size=batch_size,
-                                       shuffle=True)
-    test_data = gluon.data.DataLoader(gluon.data.ArrayDataset(samples_test, labels_test),
-                                      batch_size=batch_size,
-                                      shuffle=True)
-
-
-    # Define the model and Loss function
-    # units (int) – Dimensionality of the output space.
-    # https://mxnet.incubator.apache.org/api/python/gluon/nn.html#mxnet.gluon.nn.Dense
-    net = gluon.nn.Dense(1, dtype='float32')
-    net.collect_params().initialize(mx.init.Normal(sigma=1.), ctx=model_ctx)
-
-    # Instantiage an optimizer
-    trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': learning_rate})
-
-    # Define log loss
-    def logistic(z):
-        return 1. / (1. + nd.exp(-z))
-
-    def log_loss(output, y):
-        yhat = logistic(output)
-        return - nd.nansum(y * nd.log(yhat) + (1-y) * nd.log(1-yhat))
-    ########################################################################################################################
-
-
-    ########################################################################################################################
-    # Train
-    loss_sequence = []
-    # num_train_data = len(samples_train)
-
-    for e in range(epochs):
-        cumulative_loss = 0
-        for i, (data, label) in enumerate(train_data):
-            data = data.as_in_context(model_ctx)
-            label = label.as_in_context(model_ctx)
-            with autograd.record():
-                output = net(data)
-                loss = log_loss(output, label)
-                # print('loss', loss)
-                loss.backward()
-            trainer.step(batch_size)
-            cumulative_loss += nd.sum(loss).asscalar()
-        # print('Epoch %s, loss: %s' % (e, cumulative_loss))
-        loss_sequence.append(cumulative_loss)
-    # import matplotlib.pyplot as plt
-    # plt.figure()
-    # plt.plot(loss_sequence)
-    ########################################################################################################################
-
-
-    ########################################################################################################################
-    # Calculating accuracy
-    num_correct = 0.0
-    num_test = len(samples_test)
-    for i, (data, label) in enumerate(test_data):
-        data = data.as_in_context(model_ctx)
-        label = label.as_in_context(model_ctx)
-        output = net(data)
-        prediction = (nd.sign(output) + 1) / 2
-        num_correct += nd.sum(prediction == label)
-        accuracy = num_correct.asscalar()/num_test
-    # print("Accuracy: %0.3f (%s/%s)" % (accuracy, num_correct.asscalar(), num_test))
-    ########################################################################################################################
-
-
-    return {'Model': net,
-            'loss_sequence': loss_sequence,
-            'Accuracy': accuracy,
-            'num_test': num_test,
-            'num_train': samples_train.shape[0]}
-
-
-
-record_net_cv = []
-record_svm_rbf_cv = []
-for i in range(8):
-    # Training and testing data. Might make cv here.
-    samples_labels_test_n = samples_labels_n[(i * 10):((i + 1) * 10)]
-    samples_labels_test_c = samples_labels_c[(i * 10):((i + 1) * 10)]
-
-    ind_test = range((i * 10), ((i + 1) * 10))
-    ind_train = list(range(0, 80))
-    for ele in ind_test:
-        ind_train.remove(ele)
-    samples_labels_train_n = samples_labels_n[ind_train]
-    samples_labels_train_c = samples_labels_c[ind_train]
-
-    # samples_labels_test_n = samples_labels_n[0:10]
-    # samples_labels_test_c = samples_labels_c[0:10]
-    # samples_labels_train_n = samples_labels_n[10:80]
-    # samples_labels_train_c = samples_labels_c[10:80]
-
-
-    # Concatenate training and testing data
-    samples_labels_train = np.concatenate((samples_labels_train_n, samples_labels_train_c), axis=0)
-    samples_labels_test = np.concatenate((samples_labels_test_n, samples_labels_test_c), axis=0)
-    np.random.shuffle(samples_labels_train)
-    np.random.shuffle(samples_labels_test)
-
-    # Separate samples and labels
-    samples_train = samples_labels_train[:, 0:-1]
-    labels_train = samples_labels_train[:, -1]
-    samples_test = samples_labels_test[:, 0:-1]
-    labels_test = samples_labels_test[:, -1]
-
-    # --- net ----------------------------------------------------------------------------------------------------------
-    # record_net = bi_nn(samples_train, labels_train, samples_test, labels_test, batch_size, epochs, learning_rate_net)
-    # record_net_cv.append(record_net)
-    # --- net -----------------------------------------------------------------------------------------------------------
-
-
-    # SVM_rbf
-    record_svm_rbf = bi_svm_rbf(samples_train, labels_train, samples_test, labels_test,
-                                C_range_svm_rbf, gamma_range_svm_rbf,
-                                num_iter_inner_cv_svm_rbf, num_fold_inner_cv_svm_rbf, num_evals_inner_svm_rbf)
-    record_svm_rbf_cv.append(record_svm_rbf)
