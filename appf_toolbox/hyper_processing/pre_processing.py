@@ -402,9 +402,13 @@ def green_plant_segmentation(hyp_data_path,
         # .......
         # Load model
         if hyp_name[i][0:4] == 'vnir':
+            print(model_path + '/' + model_name_vnir)
             model_record = np.load(model_path + '/' + model_name_vnir, allow_pickle=True).flat[0]
+
         elif hyp_name[i][0:4] == 'swir':
+            print(model_path + '/' + model_name_vnir)
             model_record = np.load(model_path + '/' + model_name_swir, allow_pickle=True).flat[0]
+
         else:
             print('Neither vnir or swir data. Model cannot be loaded!')
             break
