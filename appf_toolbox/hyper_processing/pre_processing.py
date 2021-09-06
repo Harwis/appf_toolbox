@@ -402,11 +402,9 @@ def green_plant_segmentation(hyp_data_path,
         # .......
         # Load model
         if hyp_name[i][0:4] == 'vnir':
-            print(model_path + '/' + model_name_vnir)
             model_record = np.load(model_path + '/' + model_name_vnir, allow_pickle=True).flat[0]
 
         elif hyp_name[i][0:4] == 'swir':
-            print(model_path + '/' + model_name_vnir)
             model_record = np.load(model_path + '/' + model_name_swir, allow_pickle=True).flat[0]
 
         else:
@@ -569,7 +567,7 @@ def ave_ref(hyp_path,
     if not mask.any():
         print('Error in ' + hyp_path + '/' + hyp_name)
         print('The maks is all-zeros. ')
-        return np.zeros((wavelengths.shape[0],)), wavelengths
+        return np.zeros((wavelengths.shape[0], )), wavelengths
     else:
         # Take out pixels under the mask
         data[mask==0]=0
