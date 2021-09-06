@@ -4,13 +4,16 @@ from appf_toolbox.hyper_processing.pre_processing import green_plant_segmentatio
 
 
 # Parameters
-hyp_data_path = 'D:/BenRateHemp/hypimg'
+# hyp_data_path = 'D:/BenRateHemp/hypimg'
+hyp_data_path = '/media/huajian/TOSHIBA EXT/BenRateHemp/hypimg'
 
 model_name_vnir = 'green_crop_seg_model_OneClassSVM_vnir.npy'
 model_name_swir = 'green_crop_seg_model_OneClassSVM_swir.npy'
-model_path = 'C:/Huajian/python_projects/appf_toolbox_demo_data/crop_segmentation_models'
+# model_path = 'C:/Huajian/python_projects/appf_toolbox_demo_data/crop_segmentation_models'
+model_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data/green_seg_model_20210129'
 
-save_path = 'C:/Huajian/python_projects/ben_hemp_0594/processed_data/segmentation'
+# save_path = 'C:/Huajian/python_projects/ben_hemp_0594/processed_data/segmentation'
+save_path = '/media/huajian/Files/python_projects/segmentation'
 
 green_plant_segmentation(hyp_data_path,
                         model_name_vnir=model_name_vnir,
