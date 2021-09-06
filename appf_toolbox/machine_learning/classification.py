@@ -1,35 +1,22 @@
 ########################################################################################################################
 def plot_samples_with_colourbar(samples, labels, wavelengths=[], input_type='Input data values', title='Title'):
     """
-    Plot the samples (reflectance values) with a colour bar which is defined by the values of the labels.
+    Plot the samples with a colour bar which is defined by the values of the labels.
 
     :param samples: input data array; usually reflectance values
-    :param labels: the values of the labels (the parameter need to be measured)
+    :param labels: the values of the labels. E.g. 0, 1, 2 ......
     :param x_axis_value: the x_axis_value in the plot; default is [] which will lead to x axis values of 1, 2, 3 ......
-    :param input_type: reflectance, pca, etc
+    :param input_type: A string of "reflectance", "pca", etc
     :param title: title for plot
     :return: return 0 if no errors
+
+    Version 1.0 Date: Aug 25, 2021
+    Author: Huajian Liu huajian.liu@adelaide.edu.au
     """
+
     from matplotlib import pyplot as plt
     import matplotlib as mpl
     import numpy as np
-
-
-    # n_lines = 5
-    # x = np.linspace(0, 10, 100)
-    # y = np.sin(x[:, None] + np.pi * np.linspace(0, 1, n_lines))
-    # c = np.arange(1., n_lines + 1)
-    #
-    # cmap = plt.get_cmap("jet", len(c))
-    # norm = colors.BoundaryNorm(np.arange(len(c) + 1) + 0.5, len(c))
-    # sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-    # sm.set_array([])  # this line may be ommitted for matplotlib >= 3.1
-    #
-    # fig, ax = plt.subplots(dpi=100)
-    # for i, yi in enumerate(y.T):
-    #     ax.plot(x, yi, c=cmap(i))
-    # fig.colorbar(sm, ticks=c)
-    # plt.show()
 
     uni_label = np.unique(labels)
     cmap = plt.get_cmap('jet', len(uni_label))
@@ -60,7 +47,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
                        flag_save=False,
                        file_name_save='cv_record'):
     """
-    Perform repeated k-folds cross validation of classification. V1.0 only tested for binary classification.
+    Perform repeated k-folds cross validation of classification.
 
     :param input: Input data in the format of 2D numpy array.
     :param label: The ground-trued labels. 1D numpy array in int.
