@@ -1,5 +1,6 @@
 # Check if all project data was downloaded and if there was surplus data downloaded according to
 # hypname_barcode
+# Check if dark references have errors
 
 import pandas as pd
 from os import walk
@@ -11,9 +12,9 @@ from appf_toolbox.wiwam import wiwam_tools as wt
 ########################################################################################################################
 # Parameters
 ########################################################################################################################
-hyp_data_path = 'D:/BenRateHemp/hypimg'
+hyp_data_path = '/media/huajian/TOSHIBA EXT/crown_rot_0590_top_view'
 
-barcode_hypname_path = 'C:/Huajian\python_projects/ben_hemp_0594/processed_data'
+barcode_hypname_path = '/media/huajian/Files/python_projects/crown_rot_0590/crown_rot_0590_processed_data/crown_rot_0590_top_view'
 barcode_hypname_file = 'barcode_hypname.xlsx'
 sheet_name = 'barcode_hypname'
 
@@ -36,18 +37,19 @@ for (root, dirs, files) in walk(hyp_data_path):
     hypnames_dl = dirs
     break
 
-error_count = 0
-nan_count = 0
+not_download_count = 0
+other_error_count = 0
 for i in range(0, hypnames.__len__()):
     if hypnames[i] in hypnames_dl:
         pass
-    elif pd.isnull(hypnames[i]):
-        nan_count += 1
-    else:
-        error_count += 1
+    elif not(hypnames[i] in hypnames_dl):
+        not_download_count += 1
         print(hypnames[i] + ' was not downloaded')
-print('A total of ' + str(error_count) + ' data was not downloaded.')
-print('A total of ' + str(nan_count) + ' nan')
+    else:
+        other_error_count += 1
+
+print('A total of ' + str(not_download_count) + ' data was not downloaded.')
+print('A total of other errors (eg. nan) count: ' + str(other_error_count))
 
 
 ########################################################################################################################
@@ -60,7 +62,7 @@ for i in range(0, hypnames_dl.__len__()):
         pass
     else:
         error_count += 1
-        print(hypnames_dl[i] + ' in is surplus data')
+        print(hypnames_dl[i] + ' is surplus data')
 print('A total of ' + str(error_count) + ' data is surplus data')
 
 
@@ -68,8 +70,8 @@ print('A total of ' + str(error_count) + ' data is surplus data')
 # Check dark reference error
 ########################################################################################################################
 error_count = 0
+print('Checking dark reference error......')
 for i in range(0, hypnames_dl.__len__()):
-    print('Checking ' + hypnames_dl[i] + '.')
     if hypnames_dl[i][0:4] == 'swir':
         pass
     else:
