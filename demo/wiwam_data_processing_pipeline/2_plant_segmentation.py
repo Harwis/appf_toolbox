@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/media/huajian/Files/python_projects/appf_toolbox_project')
+sys.path.append('C:/Huajian/python_projects/appf_toolbox_project')
 from appf_toolbox.hyper_processing.pre_processing import green_plant_segmentation
 
 
