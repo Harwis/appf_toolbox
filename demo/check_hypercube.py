@@ -7,9 +7,9 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = '/media/huajian/Files/Data/test_shutter'
-# folder_name = 'vnir_74_103_6113_2019-10-23_04-41-19' # Raw image error
-folder_name = 'vnir_74_104_6114_2019-10-31_00-39-51'
+folder_path = 'C:/Huajian/data/dark_ref_error'
+# folder_name = 'vnir_98_136_8860_2021-07-15_08-55-05'
+folder_name = 'vnir_76_107_6318_2019-12-03_05-58-48'
 
 # folder_path = '/media/huajian/Files/Data/VNIR_error_example'
 # folder_name = 'vnir_43_54_1790_2018-10-01_22-50-58' # White mis_alignment, dark error

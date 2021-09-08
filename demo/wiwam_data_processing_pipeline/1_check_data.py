@@ -68,6 +68,7 @@ print('A total of ' + str(error_count) + ' data is surplus data')
 # Check dark reference error
 ########################################################################################################################
 error_count = 0
+list_error_data = []
 for i in range(0, hypnames_dl.__len__()):
     print('Checking ' + hypnames_dl[i] + '.')
     if hypnames_dl[i][0:4] == 'swir':
@@ -76,6 +77,8 @@ for i in range(0, hypnames_dl.__len__()):
         flag_error = wt.check_fx10_dark_error(hyp_data_path, hypnames_dl[i], threshold=500)
         if flag_error == 1:
             error_count += 1
+            list_error_data.append(hypnames_dl[i])
             print(hypnames_dl[i] + ' has dark reference error.')
 print('A total of ' + str(error_count) + ' data have dark reference error')
+print(list_error_data)
 
