@@ -136,7 +136,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     ave_con_mat = record_each_cv['confusion_matrix']
     ave_con_mat = np.asarray(ave_con_mat)
     ave_con_mat = np.mean(ave_con_mat, axis=0)
-    ave_con_mat = np.round(ave_con_mat)
+    ave_con_mat = np.round(ave_con_mat).astype(np.int)
     print('Average confusion matrix: ')
     print(ave_con_mat)
 
@@ -144,24 +144,28 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     ave_recall = record_each_cv['recall']
     ave_recall = np.asarray(ave_recall)
     ave_recall = np.mean(ave_recall, axis=0)
+    ave_recall = np.round(ave_recall, 4)
     print('Average recall: ', ave_recall)
 
     # Average precision
     ave_precision = record_each_cv['precision']
     ave_precision = np.asarray(ave_precision)
     ave_precision = np.mean(ave_precision, axis=0)
+    ave_precision = np.round(ave_precision, 4)
     print('Average precision: ', ave_precision)
 
     # Average f1 score
     ave_f1 = record_each_cv['f1']
     ave_f1 = np.asarray(ave_f1)
     ave_f1 = np.mean(ave_f1, axis=0)
+    ave_f1 = np.round(ave_f1, 2)
     print('Average f1 score: ', ave_f1)
 
     # Average accuracy
     ave_accuracy = record_each_cv['accuracy']
     ave_accuracy = np.asarray(ave_accuracy)
     ave_accuracy = np.mean(ave_accuracy, axis=0)
+    ave_accuracy = np.round(ave_accuracy, 4)
     print('Average accuracy: ', ave_accuracy)
 
     # The number of samples of each class; total samples
@@ -179,9 +183,10 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
               'average recall': ave_recall,
               'average f1': ave_f1,
               'average accuracy': ave_accuracy,
+              'average precision': ave_precision,
               'total samples': total_samples,
-              'classes: ': classes,
-              'count in each classes': counts,
+              'classes': classes,
+              'count in each class': counts,
               'final model': final_model}
 
     if flag_save:
