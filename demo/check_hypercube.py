@@ -7,6 +7,10 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
+<<<<<<< HEAD
+folder_path = '/media/huajian/TOSHIBA EXT/crown_rot_0590_side_view'
+folder_name = 'vnir_98_136_8672_2021-08-19_01-17-26'
+=======
 folder_path = 'C:/Huajian/data/dark_ref_error'
 # folder_name = 'vnir_98_136_8860_2021-07-15_08-55-05'
 folder_name = 'vnir_76_107_6318_2019-12-03_05-58-48'
@@ -30,6 +34,7 @@ folder_name = 'vnir_76_107_6318_2019-12-03_05-58-48'
 # folder_name = 'vnir_43_54_1790_2018-10-01_22-50-58'
 # folder_name = 'vnir_76_107_6318_2019-12-03_05-58-48'
 
+>>>>>>> d6f0b1cd5160b226e6b478783bd9749d57034435
 
 # Will read the wavelength on every band_interval
 band_interval = 10
