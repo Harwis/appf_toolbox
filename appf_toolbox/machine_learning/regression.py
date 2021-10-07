@@ -372,7 +372,7 @@ def modelling_PLSRegression(max_n_components,
                   'errors_each_fold': errors_each_fold,
                   'average_errors': ave_errors,
                   'wavelengths': wavelengths,
-                  'input_data_array': input_data_array,
+                  'num_samples': input_data_array.shape[0],
                   'tuned_model_finial': tuned_model_finial
                   }
 

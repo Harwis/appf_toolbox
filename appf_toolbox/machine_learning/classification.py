@@ -43,6 +43,222 @@ def plot_samples_with_colourbar(samples, labels, wavelengths=[], input_type='Inp
     plt.ylabel(input_type, fontsize=12, fontweight='bold')
 
 
+def calculate_bi_classification_metrics(label, output):
+    """
+    Calcuate the metrics of binary classification.
+
+    :param label:
+    :param output:
+    :return: A dictionary of the metrics
+    """
+    import sklearn.metrics as met
+
+    # Confusion matrix
+    conf_max = met.confusion_matrix(label, output)
+
+    # Recall
+    recall = met.recall_score(label, output)
+
+    # Precision
+    precision = met.precision_score(label, output)
+
+    # f1 score
+    f1 = met.f1_score(label, output)
+
+    # Accuracy
+    accuracy = met.accuracy_score(label, output)
+
+    dict = {'confusion_mat': conf_max,
+            'accuracy': accuracy,
+            'recall': recall,
+            'precision': precision,
+            'f1': f1}
+    return dict
+
+def average_bi_classification_metrics(record_cv):
+    import numpy as np
+
+    # For recording average
+    ave_con_mat_tra = []
+    ave_precision_tra = []
+    ave_recall_tra = []
+    ave_accuracy_tra = []
+    ave_f1_tra = []
+
+    ave_con_mat_val = []
+    ave_precision_val = []
+    ave_recall_val = []
+    ave_accuracy_val = []
+    ave_f1_val = []
+
+    for a_record in record_cv:
+        # Prepare data for averaging
+        ave_con_mat_tra.append(a_record['classification_metrics_tra']['confusion_mat'])
+        ave_accuracy_tra.append(a_record['classification_metrics_tra']['accuracy'])
+        ave_recall_tra.append(a_record['classification_metrics_tra']['recall'])
+        ave_precision_tra.append(a_record['classification_metrics_tra']['precision'])
+        ave_f1_tra.append(a_record['classification_metrics_tra']['f1'])
+
+        ave_con_mat_val.append(a_record['classification_metrics_val']['confusion_mat'])
+        ave_accuracy_val.append(a_record['classification_metrics_val']['accuracy'])
+        ave_recall_val.append(a_record['classification_metrics_val']['recall'])
+        ave_precision_val.append(a_record['classification_metrics_val']['precision'])
+        ave_f1_val.append(a_record['classification_metrics_val']['f1'])
+
+    # Average confusion matrix
+    ave_con_mat_tra = np.asarray(ave_con_mat_tra)
+    ave_con_mat_tra = np.mean(ave_con_mat_tra, axis=0)
+    ave_con_mat_tra = np.round(ave_con_mat_tra).astype(np.int)
+
+    ave_con_mat_val = np.asarray(ave_con_mat_val)
+    ave_con_mat_val = np.mean(ave_con_mat_val, axis=0)
+    ave_con_mat_val = np.round(ave_con_mat_val).astype(np.int)
+
+    # Average accuracy
+    ave_accuracy_tra = np.asarray(ave_accuracy_tra)
+    ave_accuracy_tra = np.mean(ave_accuracy_tra, axis=0)
+    ave_accuracy_tra = np.round(ave_accuracy_tra, 4)
+
+    ave_accuracy_val = np.asarray(ave_accuracy_val)
+    ave_accuracy_val = np.mean(ave_accuracy_val, axis=0)
+    ave_accuracy_val = np.round(ave_accuracy_val, 4)
+
+    # Average recall
+    ave_recall_tra = np.asarray(ave_recall_tra)
+    ave_recall_tra = np.mean(ave_recall_tra, axis=0)
+    ave_recall_tra = np.round(ave_recall_tra, 4)
+
+    ave_recall_val = np.asarray(ave_recall_val)
+    ave_recall_val = np.mean(ave_recall_val, axis=0)
+    ave_recall_val = np.round(ave_recall_val, 4)
+
+    # Average precision
+    ave_precision_tra = np.asarray(ave_precision_tra)
+    ave_precision_tra = np.mean(ave_precision_tra, axis=0)
+    ave_precision_tra = np.round(ave_precision_tra, 4)
+
+    ave_precision_val = np.asarray(ave_precision_val)
+    ave_precision_val = np.mean(ave_precision_val, axis=0)
+    ave_precision_val = np.round(ave_precision_val, 4)
+
+    # Average f1 score
+    ave_f1_tra = np.asarray(ave_f1_tra)
+    ave_f1_tra = np.mean(ave_f1_tra, axis=0)
+    ave_f1_tra = np.round(ave_f1_tra, 2)
+
+    ave_f1_val = np.asarray(ave_f1_val)
+    ave_f1_val = np.mean(ave_f1_val, axis=0)
+    ave_f1_val = np.round(ave_f1_val, 2)
+
+    ave_metrics = {'ave_metrics_train': {'conf_mat': str(ave_con_mat_tra),
+                                         'accuracy': ave_accuracy_tra,
+                                         'recall': ave_recall_tra,
+                                         'precision': ave_precision_tra,
+                                         'f1': ave_f1_tra},
+                   'ave_metrics_validation': {'conf_mat': str(ave_con_mat_val),
+                                              'accuracy': ave_accuracy_val,
+                                              'recall': ave_recall_val,
+                                              'precision': ave_precision_val,
+                                              'f1': ave_f1_val}}
+
+    return ave_metrics
+
+
+def average_classification_metrics(record_cv):
+    """
+    Average classification metrics for multiple classes. Designed for repeadted_kfold_cv.
+    :param record_cv: recored of cross validaton retruned from
+    :return: Averaged classification metrics.
+    """
+    import numpy as np
+
+    # For recording average
+    ave_con_mat_tra = []
+    ave_precision_tra = []
+    ave_recall_tra = []
+    ave_accuracy_tra = []
+    ave_f1_tra = []
+
+    ave_con_mat_val = []
+    ave_precision_val = []
+    ave_recall_val = []
+    ave_accuracy_val = []
+    ave_f1_val = []
+
+    for a_record in record_cv:
+        # Prepare data for averaging
+        ave_con_mat_tra.append(a_record['Confusion matrix of train'])
+        ave_accuracy_tra.append(a_record['Classification report of train']['accuracy'])
+        ave_recall_tra.append(a_record['Classification report of train']['weighted avg']['recall'])
+        ave_precision_tra.append(a_record['Classification report of train']['weighted avg']['precision'])
+        ave_f1_tra.append(a_record['Classification report of train']['weighted avg']['f1-score'])
+
+        ave_con_mat_val.append(a_record['Confusion matrix of validation'])
+        ave_accuracy_val.append(a_record['Classification report of validation']['accuracy'])
+        ave_recall_val.append(a_record['Classification report of validation']['weighted avg']['recall'])
+        ave_precision_val.append(a_record['Classification report of validation']['weighted avg']['precision'])
+        ave_f1_val.append(a_record['Classification report of validation']['weighted avg']['f1-score'])
+
+    # Average confusion matrix
+    ave_con_mat_tra = np.asarray(ave_con_mat_tra)
+    ave_con_mat_tra = np.mean(ave_con_mat_tra, axis=0)
+    ave_con_mat_tra = np.round(ave_con_mat_tra).astype(np.int)
+
+    ave_con_mat_val = np.asarray(ave_con_mat_val)
+    ave_con_mat_val = np.mean(ave_con_mat_val, axis=0)
+    ave_con_mat_val = np.round(ave_con_mat_val).astype(np.int)
+
+    # Average accuracy
+    ave_accuracy_tra = np.asarray(ave_accuracy_tra)
+    ave_accuracy_tra = np.mean(ave_accuracy_tra, axis=0)
+    ave_accuracy_tra = np.round(ave_accuracy_tra, 4)
+
+    ave_accuracy_val = np.asarray(ave_accuracy_val)
+    ave_accuracy_val = np.mean(ave_accuracy_val, axis=0)
+    ave_accuracy_val = np.round(ave_accuracy_val, 4)
+
+    # Average recall
+    ave_recall_tra = np.asarray(ave_recall_tra)
+    ave_recall_tra = np.mean(ave_recall_tra, axis=0)
+    ave_recall_tra = np.round(ave_recall_tra, 4)
+
+    ave_recall_val = np.asarray(ave_recall_val)
+    ave_recall_val = np.mean(ave_recall_val, axis=0)
+    ave_recall_val = np.round(ave_recall_val, 4)
+
+    # Average precision
+    ave_precision_tra = np.asarray(ave_precision_tra)
+    ave_precision_tra = np.mean(ave_precision_tra, axis=0)
+    ave_precision_tra = np.round(ave_precision_tra, 4)
+
+    ave_precision_val = np.asarray(ave_precision_val)
+    ave_precision_val = np.mean(ave_precision_val, axis=0)
+    ave_precision_val = np.round(ave_precision_val, 4)
+
+    # Average f1 score
+    ave_f1_tra = np.asarray(ave_f1_tra)
+    ave_f1_tra = np.mean(ave_f1_tra, axis=0)
+    ave_f1_tra = np.round(ave_f1_tra, 2)
+
+    ave_f1_val = np.asarray(ave_f1_val)
+    ave_f1_val = np.mean(ave_f1_val, axis=0)
+    ave_f1_val = np.round(ave_f1_val, 2)
+
+    ave_metrics = {'ave_metrics_train': {'conf_mat': str(ave_con_mat_tra),
+                                         'accuracy': ave_accuracy_tra,
+                                         'recall': ave_recall_tra,
+                                         'precision': ave_precision_tra,
+                                         'f1': ave_f1_tra},
+                   'ave_metrics_validation': {'conf_mat': str(ave_con_mat_val),
+                                              'accuracy': ave_accuracy_val,
+                                              'recall': ave_recall_val,
+                                              'precision': ave_precision_val,
+                                              'f1': ave_f1_val}}
+
+    return ave_metrics
+
+
+
 def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, random_state=0,
                        flag_save=False,
                        file_name_save='cv_record'):
@@ -59,136 +275,120 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     :param flag_save: Flag to save the record. If set to True, it will save the record as a .save file in the present
            working directory. Default is False
     :param file_name_save: The file name to save the record. Default is 'cv_record'.
-    :return: The record of repeated cross validation.
+    :return: If have valid record, it returns a dictionary recording the report of repeated cross validation; otherwise
+           it return -1.
 
      Version 1.0 Date: Aug 25, 2021 Tested for binary classification.
      Author: Huajian Liu huajian.liu@adelaide.edu.au
     """
 
     from sklearn.model_selection import RepeatedKFold
-    import sklearn.metrics as met
     import numpy as np
     import joblib
     from datetime import datetime
+    import sklearn.metrics as met
+
+    # Performing repeated cross validation
+    # First, calculate the number of samples of each class; total samples
+    classes, counts = np.unique(label, return_counts=True)
+    total_samples = label.shape[0]
 
     rkf = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=random_state)
-    
-    # For record the result of each cross validation
-    record_each_cv = {'confusion_matrix': [],
-                      'recall': [],
-                      'precision': [],
-                      'f1': [],
-                      'accuracy': [],
-                      'num_pos_neg': []}
-
-    # Performing cross validation
+    record_each_cv = []
     count_cv = 1
     for train_ind, val_index in rkf.split(input):
         print('')
-        print('==========cross validation ' + str(count_cv) + '==========')
+        print('========== cross validation ' + str(count_cv) + '==========')
 
         # Train
         tuned_model = tune_model(input[train_ind], label[train_ind], **karg)
         print('Tuned model:')
         print(tuned_model)
 
-        # Prediction
-        output_val = tuned_model.predict(input[val_index])
-
-        # Confusion matrix
-        conf_max = met.confusion_matrix(label[val_index], output_val)
-        print('confusion matrix:')
-        print(conf_max)
-        record_each_cv['confusion_matrix'].append(conf_max)
-
-        # Recall
-        recall = met.recall_score(label[val_index], output_val)
-        print('Recall:', recall)
-        record_each_cv['recall'].append(recall)
-
-        # Precision
-        precision = met.precision_score(label[val_index], output_val)
-        print('Precision:', precision)
-        record_each_cv['precision'].append(precision)
-
-        # f1 score
-        f1 = met.f1_score(label[val_index], output_val)
-        print('f1 score', f1)
-        record_each_cv['f1'].append(f1)
-
-        # Accuracy
-        accuracy = met.accuracy_score(label[val_index], output_val)
-        print('Accuracy', accuracy)
-        record_each_cv['accuracy'].append(accuracy)
-
         # Number of positive and negative samples in validation
-        num_pos = np.sum(label[val_index])
-        num_neg = label[val_index].shape[0] - num_pos
-        print('The number of positive and negative samples ', (num_pos, num_neg))
-        record_each_cv['num_pos_neg'].append((num_pos, num_neg))
+        classes_val, counts_val = np.unique(label[val_index], return_counts=True)
+        classes_tra, counts_tra = np.unique(label[train_ind], return_counts=True)
 
-        count_cv += 1
+        # The classes of training or validation should be the same of the total classes
+        if classes_tra.shape[0] != classes.shape[0]:
+            print('The classes of training is ', classes_tra)
+            print('Do not take into account in cv.')
+        elif classes_val.shape[0] != classes.shape[0]:
+            print("The classes of validation is ", classes_val)
+            print('Do not take into account in cv.')
+        else:
+            # Prediction
+            output_tra = tuned_model.predict(input[train_ind])
+            output_val = tuned_model.predict(input[val_index])
 
-    print()
-    print('Summyar of ' + str(n_splits) + '-fold cross validation with ' + str(n_repeats) + ' repeats')
+            # Classification metrics
+            # metrics_val = calculate_bi_classification_metrics(label[val_index], output_val)
+            # metrics_tra = calculate_bi_classification_metrics(label[train_ind], output_tra)
+
+            # Classification report for binary of multiple classes.
+            report_tra = met.classification_report(label[train_ind], output_tra, output_dict=True)
+            report_val = met.classification_report(label[val_index], output_val, output_dict=True)
+
+            # Confusion matrix
+            conf_max_tra = met.confusion_matrix(label[train_ind], output_tra)
+            conf_max_val = met.confusion_matrix(label[val_index], output_val)
+
+            print('-----------------')
+            print('Train')
+            print('-----------------')
+            print('Classes', classes_tra)
+            print('Count of each class:')
+            print(counts_tra)
+            print(report_tra)
+
+            print('-----------------')
+            print('Validation')
+            print('-----------------')
+            print('Classes', classes_val)
+            print('Count of each class:')
+            print(counts_val)
+            print(report_val)
+
+            # Record
+            record_each_cv.append({'Classification report of validation': report_val,
+                                   'Count of validation': counts_val,
+                                   'Classification report of train': report_tra,
+                                   'Count of train': counts_val,
+                                   'Confusion matrix of train': conf_max_tra,
+                                   'Confusion matrix of validation': conf_max_val,
+                                   'Classes': classes_tra})
+            count_cv += 1
+
+    if record_each_cv.__len__() == 0:
+        print('No valid recored in cross-validation.')
+        return -1
 
     # Average confusion matrix
-    ave_con_mat = record_each_cv['confusion_matrix']
-    ave_con_mat = np.asarray(ave_con_mat)
-    ave_con_mat = np.mean(ave_con_mat, axis=0)
-    ave_con_mat = np.round(ave_con_mat).astype(np.int)
-    print('Average confusion matrix: ')
-    print(ave_con_mat)
+    ave_metrics = average_classification_metrics(record_each_cv)
 
-    # Average recall
-    ave_recall = record_each_cv['recall']
-    ave_recall = np.asarray(ave_recall)
-    ave_recall = np.mean(ave_recall, axis=0)
-    ave_recall = np.round(ave_recall, 4)
-    print('Average recall: ', ave_recall)
-
-    # Average precision
-    ave_precision = record_each_cv['precision']
-    ave_precision = np.asarray(ave_precision)
-    ave_precision = np.mean(ave_precision, axis=0)
-    ave_precision = np.round(ave_precision, 4)
-    print('Average precision: ', ave_precision)
-
-    # Average f1 score
-    ave_f1 = record_each_cv['f1']
-    ave_f1 = np.asarray(ave_f1)
-    ave_f1 = np.mean(ave_f1, axis=0)
-    ave_f1 = np.round(ave_f1, 2)
-    print('Average f1 score: ', ave_f1)
-
-    # Average accuracy
-    ave_accuracy = record_each_cv['accuracy']
-    ave_accuracy = np.asarray(ave_accuracy)
-    ave_accuracy = np.mean(ave_accuracy, axis=0)
-    ave_accuracy = np.round(ave_accuracy, 4)
-    print('Average accuracy: ', ave_accuracy)
-
-    # The number of samples of each class; total samples
-    classes, counts = np.unique(label, return_counts=True)
-    total_samples = label.shape[0]
+    # Print the summary of cross-validation
+    print()
+    print('Summary of ' + str(n_splits) + '-fold cross validation with ' + str(n_repeats) + ' repeats')
     print('Total samples: ', total_samples)
     print('Classes:', classes)
     print('Count in each classes: ', counts)
+    print('Average metrics of train: ')
+    print(ave_metrics['ave_metrics_train'])
+    print('Average metrics of validation: ')
+    print(ave_metrics['ave_metrics_validation'])
 
     # Train a final model using all of the data
     final_model = tune_model(input, label, **karg)
 
+    # Record
     record = {'record of each cv': record_each_cv,
-              'average confusion matrix': ave_con_mat,
-              'average recall': ave_recall,
-              'average f1': ave_f1,
-              'average accuracy': ave_accuracy,
-              'average precision': ave_precision,
+              'average metrics': ave_metrics,
               'total samples': total_samples,
-              'classes': classes,
-              'count in each class': counts,
+              'classes': str(classes),
+              'count in each class': str(counts),
               'final model': final_model}
 
+    # Save
     if flag_save:
         file_name_save = file_name_save + '_' + datetime.now().strftime('%y-%m-%d-%H-%M-%S') + '.sav'
         joblib.dump(record, file_name_save)
