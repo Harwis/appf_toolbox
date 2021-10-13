@@ -7,34 +7,9 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
-<<<<<<< HEAD
 folder_path = '/media/huajian/TOSHIBA EXT/crown_rot_0590_side_view'
-folder_name = 'vnir_98_136_8672_2021-08-19_01-17-26'
-=======
-folder_path = 'C:/Huajian/data/dark_ref_error'
-# folder_name = 'vnir_98_136_8860_2021-07-15_08-55-05'
-folder_name = 'vnir_76_107_6318_2019-12-03_05-58-48'
+folder_name = 'vnir_98_136_8665_2021-07-15_03-02-34'
 
-# folder_path = '/media/huajian/Files/Data/VNIR_error_example'
-# folder_name = 'vnir_43_54_1790_2018-10-01_22-50-58' # White mis_alignment, dark error
-# folder_name = 'vnir_43_54_1791_2018-09-11_23-16-14' # white mis_alignment
-
-# folder_path = '/media/huajian/Files/Data/wheat_gene_classification_0528'
-# folder_name = 'vnir_86_121_7559_2020-08-17_03-47-26'
-
-# folder_path = '/media/huajian/Files/Data/test_first_vnir'
-# folder_name = 'vnir_29_27_845_2018-05-04_04-35-38' # white mis-alignment
-# folder_name = 'vnir_29_27_846_2018-05-04_04-37-08'
-
-# folder_path = '/media/huajian/Files/Data/crown_rot_pilot_0590_data/wiw_20210421'
-# folder_name = 'vnir_92_130_8079_2021-04-21_05-20-00'
-# folder_name = 'vnir_92_130_8082_2021-04-21_05-21-41'
-
-# folder_path = '/media/huajian/Files/Data/VNIR_error_example'
-# folder_name = 'vnir_43_54_1790_2018-10-01_22-50-58'
-# folder_name = 'vnir_76_107_6318_2019-12-03_05-58-48'
-
->>>>>>> d6f0b1cd5160b226e6b478783bd9749d57034435
 
 # Will read the wavelength on every band_interval
 band_interval = 10

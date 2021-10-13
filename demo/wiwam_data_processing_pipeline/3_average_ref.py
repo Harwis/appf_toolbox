@@ -15,13 +15,13 @@ import pandas as pd
 # Parameters
 ########################################################################################################################
 # Paramters
-hyp_data_path = '/media/huajian/TOSHIBA EXT/BenRateHemp/hypimg'
+hyp_data_path = '/media/huajian/TOSHIBA EXT/crown_rot_0590_top_view'
 
-barcode_hypname_path = '/media/huajian/Files/python_projects/ben_hemp_0594/processed_data'
+barcode_hypname_path = '/media/huajian/Files/python_projects/crown_rot_0590/crown_rot_0590_processed_data/crown_rot_0590_top_view'
 barcode_hypname_file = 'barcode_hypname.xlsx'
 sheet_name = 'barcode_hypname'
 
-mask_path = '/media/huajian/Files/python_projects/ben_hemp_0594/processed_data/segmentation'
+mask_path = '/media/huajian/Files/python_projects/crown_rot_0590/crown_rot_0590_processed_data/crown_rot_0590_top_view/segmentation'
 
 t_wave_1 = 450
 t_wave_2 = 1000

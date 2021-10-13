@@ -182,7 +182,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
               'average confusion matrix': ave_con_mat,
               'average recall': ave_recall,
               'average f1': ave_f1,
-              'average accuracy': ave_accuracy,
+              'average accuracy': ave_asccuracy,
               'average precision': ave_precision,
               'total samples': total_samples,
               'classes': classes,
