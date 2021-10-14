@@ -578,20 +578,100 @@ def green_plant_segmentation_batch(hyp_data_path,
     return 0
 
 
+def average_ref_under_mask(data,
+                           mask,
+                           flag_smooth=True,
+                           window_length=21,
+                           polyorder=3,
+                           flag_check=False,
+                           band_ind=20):
+    """
+    Calculate the average reflectance of the pixels of a hypercube under a mask.
+    :param data: A calibrated hypercube in float ndarray format
+    :param mask: A Bool image in which the pixels of object is True and background is False.
+    :param flag_smooth: The flag to smooth the reflectance curve or not.
+    :param window_length: The window length of SAVGOL filter.
+    :param polyorder: The polyorder of SAVGOL filter.
+    :param flag_check: The flag to check the result.
+    :param band_ind: The band index for checking the results.
+    :return: The average reflectance of the pixels under the mask.
+
+    Author: Huajian Liu
+    Email: huajian.liu@adelaide.edu.au
+    Version: 0.0 date: Oct 14 2021
+    """
+
+    import sys
+    from pathlib import Path
+    sys.path.append(Path(__file__).parent.parent.parent)
+    from appf_toolbox.hyper_processing import pre_processing as pp
+    from matplotlib import pyplot as plt
+
+    # Check mask
+    if not mask.any():
+        print('The maks is all-zeros. ')
+        return np.zeros((data.shape[2], ))
+    else:
+        # Take out pixels under the mask
+        data[mask==0]=0
+
+        # Check mask
+        if flag_check:
+            fig1, af1 = plt.subplots(3, 1)
+            af1[0].imshow(data[:, :, band_ind], cmap='gray')
+            af1[0].set_title('Image of band ' + str(band_ind))
+
+        # Reshape and remove zero-rows
+        data = data.reshape((data.shape[0] * data.shape[1], data.shape[2]), order='C')
+        zero_row_ind = np.where(~data.any(axis=1))[0]
+        data = np.delete(data, zero_row_ind, axis=0)
+
+        # Average
+        ave_ref = np.mean(data, axis=0)
+
+        # Check
+        if flag_check:
+          for ref_ind in range(0, data.shape[0], int(data.shape[0]/10)):
+                af1[1].plot(data[ref_ind], linestyle='dashed')
+          af1[1].set_ylabel('Reflectance', fontsize=12, fontweight='bold')
+          af1[1].set_title('Reflectance before smoothing.')
+          af1[1].plot(ave_ref, color='red', label='Average ref')
+          plt.legend()
+
+         # Smooth
+        if flag_smooth:
+            data = pp.smooth_savgol_filter(data, window_length, polyorder)
+            data[data < 0] = 0
+
+            # Average
+            ave_ref = np.mean(data, axis=0)
+
+            if flag_check:
+                for ref_ind in range(0, data.shape[0], int(data.shape[0]/10)):
+                    af1[2].plot(data[ref_ind], linestyle='dashed')
+                af1[2].set_ylabel('Reflectance', fontsize=12, fontweight='bold')
+                af1[2].set_title('Reflectance after smoothing.')
+                af1[2].plot(ave_ref, color='red', label='Average ref')
+                plt.legend()
+                plt.show()
+
+        return ave_ref
+
+
 ########################################################################################################################
-# Calculate the average reflectance of crops.
+# Calculate the average reflectance of crops for a wiwam hyp-image
 ########################################################################################################################
-def ave_ref(hyp_path,
-             hyp_name,
-             mask,
-             flag_smooth=True,
-             window_length=21,
-             polyorder=3,
-             flag_check=False,
-             band_ind=50,
-             ref_ind=50,
-             white_offset_top=0.1,
-             white_offset_bottom=0.9):
+def ave_ref_under_mask_wiwam_batch(hyp_path,
+                                   hyp_name,
+                                   mask,
+                                   flag_smooth=True,
+                                   window_length=21,
+                                   polyorder=3,
+                                   flag_check=False,
+                                   band_ind=50,
+                                   ref_ind=50,
+                                   white_offset_top=0.1,
+                                   white_offset_bottom=0.9):
     """
     Calculate the average reflectance of crops using a mask (BW).
     If the mask is all-zeros, the average reflectance is set to np.zeros((1, wavelengths.shape[0])).
@@ -638,47 +718,15 @@ def ave_ref(hyp_path,
     wavelengths = np.asarray(wavelengths)
     wavelengths = wavelengths.astype(float)
 
-    if not mask.any():
-        print('Error in ' + hyp_path + '/' + hyp_name)
-        print('The maks is all-zeros. ')
-        return np.zeros((wavelengths.shape[0], )), wavelengths
-    else:
-        # Take out pixels under the mask
-        data[mask==0]=0
-
-        # Check mask
-        if flag_check:
-            fig1, af1 = plt.subplots(1, 1)
-            af1.imshow(data[:, :, band_ind], cmap='gray')
-            af1.set_title('Band ' + str(band_ind) + '@' + str(wavelengths[band_ind]) + 'nm')
-            # plt.show()ave_ref
-
-        # Reshape and remove zero-rows
-        data = data.reshape((data.shape[0] * data.shape[1], data.shape[2]), order='C')
-        zero_row_ind = np.where(~data.any(axis=1))[0]
-        data = np.delete(data, zero_row_ind, axis=0)
-
-        # Check
-        if flag_check:
-            fig2, af2 = plt.subplots(1, 1)
-            af2.plot(wavelengths, data[ref_ind], color='blue', label='A random ref without smooth')
-            af2.set_xlabel('Wavelength (nm)', fontsize=12, fontweight='bold')
-            af2.set_ylabel('Reflectance', fontsize=12, fontweight='bold')
-
-         # Smooth
-        if flag_smooth:
-            data = pp.smooth_savgol_filter(data, window_length, polyorder)
-            data[data < 0] = 0
-
-            if flag_check:
-                af2.plot(wavelengths, data[ref_ind], color='green', label='A random ref with smooth')
-                af2.set_title('A random and average reflectance for check')
-
-        # Average
-        ave_ref = np.mean(data, axis=0)
-        if flag_check:
-            af2.plot(wavelengths, ave_ref, color='red', label='Average ref')
-            plt.legend()
-            plt.show()
+    # -------------------------------------------------------------
+    # Average
+    # -------------------------------------------------------------
+    ave_ref = verage_ref_under_mask(data,
+                                    mask,
+                                    flag_smooth=flag_smooth,
+                                    window_length=window_length,
+                                    polyorder=polyorder,
+                                    flag_check=flag_check,
+                                    band_ind=band_ind)
 
     return ave_ref, wavelengths
