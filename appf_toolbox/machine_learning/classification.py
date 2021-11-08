@@ -45,7 +45,7 @@ def plot_samples_with_colourbar(samples, labels, wavelengths=[], input_type='Inp
 
 def calculate_bi_classification_metrics(label, output):
     """
-    Calcuate the metrics of binary classification.
+    Calculate the metrics of binary classification.
 
     :param label:
     :param output:
@@ -166,7 +166,7 @@ def average_bi_classification_metrics(record_cv):
 
 def average_classification_metrics(record_cv):
     """
-    Average classification metrics for multiple classes. Designed for repeadted_kfold_cv.
+    Average classification metrics for multiple classes. Designed for repeated_k-fold_cv.
     :param record_cv: recored of cross validaton retruned from
     :return: Averaged classification metrics.
     """
@@ -360,10 +360,10 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
             count_cv += 1
 
     if record_each_cv.__len__() == 0:
-        print('No valid recored in cross-validation.')
+        print('No valid record in cross-validation.')
         return -1
 
-    # Average confusion matrix
+    # Average
     ave_metrics = average_classification_metrics(record_each_cv)
 
     # Print the summary of cross-validation
