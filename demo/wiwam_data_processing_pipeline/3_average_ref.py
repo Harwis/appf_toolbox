@@ -15,13 +15,13 @@ import pandas as pd
 # Parameters
 ########################################################################################################################
 # Paramters
-hyp_data_path = '/media/huajian/TOSHIBA EXT/BenRateHemp/hypimg'
+hyp_data_path = '/media/huajian/TOSHIBA EXT/crown_rot_0590_top_view'
 
-barcode_hypname_path = '/media/huajian/Files/python_projects/ben_hemp_0594/processed_data'
+barcode_hypname_path = '/media/huajian/Files/python_projects/crown_rot_0590/crown_rot_0590_processed_data/crown_rot_0590_top_view'
 barcode_hypname_file = 'barcode_hypname.xlsx'
 sheet_name = 'barcode_hypname'
 
-mask_path = '/media/huajian/Files/python_projects/ben_hemp_0594/processed_data/segmentation'
+mask_path = '/media/huajian/Files/python_projects/crown_rot_0590/crown_rot_0590_processed_data/crown_rot_0590_top_view/segmentation'
 
 t_wave_1 = 450
 t_wave_2 = 1000
@@ -49,31 +49,31 @@ for a_row in barcode_hypname.iterrows():
         mask_swir = plt.imread(mask_path + '/' + a_row[1]['swir'] + '_bw.png')
         mask_vnir = mask_vnir[:, :, 0]
         mask_swir = mask_swir[:, :, 0]
-        ave_ref_vnir, wave_vnir = ave_ref(hyp_data_path,
-                                           a_row[1]['vnir'],
-                                           mask_vnir,
-                                           flag_smooth=flag_smooth,
-                                           # window_length=21,
-                                           # polyorder=3,
-                                           flag_check=flag_check,
-                                           # band_ind=50,
-                                           # ref_ind=50,
-                                           # white_offset_top=0.1,
-                                           # white_offset_bottom=0.9
-                                           )
+        ave_ref_vnir, wave_vnir = ave_ref_under_mask_wiwam_batch(hyp_data_path,
+                                                                   a_row[1]['vnir'],
+                                                                   mask_vnir,
+                                                                   flag_smooth=flag_smooth,
+                                                                   # window_length=21,
+                                                                   # polyorder=3,
+                                                                   flag_check=flag_check,
+                                                                   # band_ind=50,
+                                                                   # ref_ind=50,
+                                                                   # white_offset_top=0.1,
+                                                                   # white_offset_bottom=0.9
+                                                                   )
 
-        ave_ref_swir, wave_swir = ave_ref(hyp_data_path,
-                                           a_row[1]['swir'],
-                                           mask_swir,
-                                           flag_smooth=flag_smooth,
-                                           # window_length=21,
-                                           # polyorder=3,
-                                           flag_check=flag_check,
-                                           # band_ind=50,
-                                           # ref_ind=50,
-                                           # white_offset_top=0.1,
-                                           # white_offset_bottom=0.9
-                                           )
+        ave_ref_swir, wave_swir = ave_ref_under_mask_wiwam_batch(hyp_data_path,
+                                                                   a_row[1]['swir'],
+                                                                   mask_swir,
+                                                                   flag_smooth=flag_smooth,
+                                                                   # window_length=21,
+                                                                   # polyorder=3,
+                                                                   flag_check=flag_check,
+                                                                   # band_ind=50,
+                                                                   # ref_ind=50,
+                                                                   # white_offset_top=0.1,
+                                                                   # white_offset_bottom=0.9
+                                                                   )
 
         # Trim noisy bands
         wave_mask_vnir = np.logical_and(np.logical_or(wave_vnir > t_wave_1, wave_vnir == t_wave_1),

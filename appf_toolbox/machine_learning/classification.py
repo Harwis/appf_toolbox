@@ -382,7 +382,15 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
 
     # Record
     record = {'record of each cv': record_each_cv,
+<<<<<<< HEAD
+              'average confusion matrix': ave_con_mat,
+              'average recall': ave_recall,
+              'average f1': ave_f1,
+              'average accuracy': ave_asccuracy,
+              'average precision': ave_precision,
+=======
               'average metrics': ave_metrics,
+>>>>>>> c2a56474bae101bc14180e6b2aa619d5aeda3d21
               'total samples': total_samples,
               'classes': str(classes),
               'count in each class': str(counts),

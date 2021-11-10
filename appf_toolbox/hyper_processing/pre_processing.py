@@ -10,7 +10,7 @@ def remove_jumps(spec_sig, ind_jumps=[], num_points=5, flag_auto_detect_jumps=Fa
     """
     Remove the jumps in a spectral signature.
 
-    :param spec_sig: the spectral signature need to be fixed;1D ndarray format
+    :param spec_sig: the spectral signature need to be fixed; 1D ndarray format
 
     :param ind_jumps: the indices of jumps; must be a list; the indices starts from 0; default is []; [650, 1480] for
            FieldSpec data; [398] for hyp images of vnir + swir
@@ -133,7 +133,7 @@ def remove_jumps(spec_sig, ind_jumps=[], num_points=5, flag_auto_detect_jumps=Fa
         rel_shifts = raw_values - est_values
         abs_shifts = np.cumsum(rel_shifts)
 
-        # Shit the data
+        # Shift the data
         spec_sig_fixed = spec_sig.copy()
         for i in range(0, ind_jumps.shape[0]):
             if i < ind_jumps.shape[0] - 1:
@@ -141,6 +141,11 @@ def remove_jumps(spec_sig, ind_jumps=[], num_points=5, flag_auto_detect_jumps=Fa
                     spec_sig[ind_jumps[i] + 1:ind_jumps[i + 1] + 1] - abs_shifts[i]
             else:
                 spec_sig_fixed[ind_jumps[i] + 1:] = spec_sig[ind_jumps[i] + 1:] - abs_shifts[i]
+
+        # Check if some of the values < 0 after shifting
+        min_ref = np.min(spec_sig_fixed)
+        if min_ref < 0:
+            spec_sig_fixed = spec_sig_fixed - min_ref
 
         if flag_plot_result:
             ax_raw.plot(spec_sig_fixed, 'g--', label='Jumps fixed')
@@ -321,22 +326,149 @@ def spectral_resample(source_spectral_sig_array, source_wavelength, destination_
     return destination_spectral_sig_array
 
 
+def green_plant_segmentation(data,
+                             wavelength,
+                             path_segmentation_model,
+                             name_segmentation_model,
+                             band_R=300,
+                             band_G=200,
+                             band_B=100,
+                             gamma=0.8,
+                             flag_remove_noise=True,
+                             flag_check=False):
+    """
+    Conduct green plant segmentation using a pre-trained model.
+    :param data: Calibrated hypercube in float ndarray format.
+    :param wavelength: The corresponding wavelength of the data (hypercube).
+    :param path_segmentation_model: The path of the pre-trained segmentation model.
+    :param name_segmentation_model: The name of the pre-trained segmentation mode.
+    :param band_R: An user-defined red band for checking the result. Defaul is 300.
+    :param band_G: An user-defined green band for checking the result. Defaul is 200.
+    :param band_B: An user-defined blue band for checking the result. Defaul is 100.
+    :param gamma: gamma value for exposure adjustment.
+    :param flag_remove_noise: Flag to remove the noise in BW image. Default is True.
+    :param flag_check: Flag to show the results of segmenation.
+    :return: The BW image and pseu image.
+
+    Author: Huajina Liu
+    Email: huajian.liu@adelaide.edu.au
+
+    Date: Otc 13 2021
+    Version: 0.0
+    """
+
+    import numpy as np
+    from pathlib import Path
+    sys.path.append(Path(__file__).parent.parent.parent)
+    from appf_toolbox.hyper_processing import pre_processing as pp
+    from appf_toolbox.hyper_processing import transformation as tf
+    from skimage import morphology
+    from skimage import exposure
+    import joblib
+
+    ####################################################################################################################
+    # Load segmentation model
+    ####################################################################################################################
+    model_record = joblib.load(path_segmentation_model + '/' + name_segmentation_model)
+    model = model_record['model']
+
+    ####################################################################################################################
+    # Smooth
+    ####################################################################################################################
+    # Reshape
+    row = data.shape[0]
+    col = data.shape[1]
+
+    # R, G and B bands for later use
+    R = data[:, :, band_R].reshape((row, col, 1))
+    G = data[:, :, band_G].reshape((row, col, 1))
+    B = data[:, :, band_B].reshape((row, col, 1))
+
+    data = data.reshape((row * col, data.shape[2]), order='C')
+
+    # Smooth
+    data = pp.smooth_savgol_filter(data, model_record['window length of smooth filter'],
+                                   model_record['polyorder of smooth filter'])
+    data[data < 0] = 0
+
+    ####################################################################################################################
+    # Classification
+    ####################################################################################################################
+    # Spectral resampling
+    wave_model = model_record['wave_model']
+    data = pp.spectral_resample(data, wavelength, wave_model)
+
+    # hc2hhsi
+    data = data.reshape((row, col, data.shape[1]))
+    data, saturation, intensity = tf.hc2hhsi(data)
+
+    # Reshape to 2D for OneClassSVM_swir_hh
+    data = data.reshape((row * col, data.shape[2]), order='C')
+
+    # Classification
+    classes = model.predict(data)
+
+    ####################################################################################################################
+    # Make BW and pseu image
+    ####################################################################################################################
+    # BW image
+    bw = classes.reshape((row, col), order='C')
+    bw[bw == -1] = False
+    bw[bw == 1] = True
+
+    # Remove noise in BW image
+    if flag_remove_noise:
+        # Erosion and reconstruction
+        selem = np.ones((3, 3))
+        bw_ero = morphology.binary_erosion(bw, selem=selem)
+        bw = morphology.reconstruction(bw_ero, bw)
+
+        # Remove_small holes; only accept bool type
+        bw = bw.astype(bool)
+        bw = morphology.remove_small_holes(bw)
+
+    if np.sum(bw) == 0:
+        print('No pixels of green plants was detected.')
+
+    # pseu image
+    border = np.logical_and(bw, np.bitwise_not(morphology.binary_erosion(bw)))
+
+    R[border] = 1
+    G[border] = 0
+    B[border] = 0
+    pseu = np.concatenate((R, G, B), axis=2)
+    pseu = exposure.adjust_gamma(pseu, gamma)
+
+    ####################################################################################################################
+    # Check image
+    ####################################################################################################################
+    if flag_check:
+        from matplotlib import pyplot as plt
+        fig, ax = plt.subplots(1, 2)
+        ax[0].imshow(bw, cmap='gray')
+        ax[1].imshow(pseu)
+        plt.show()
+
+    return bw, pseu
+
+
+
 ########################################################################################################################
-# Green crop segmentation
+# Green crop segmentation batch
 ########################################################################################################################
-def green_plant_segmentation(hyp_data_path,
-                              model_name_vnir='',
-                              model_name_swir='',
-                              model_path='./',
-                              gamma=0.8,
-                              flag_remove_noise=False,
-                              white_offset_top=0.1,
-                              white_offset_bottom=0.9,
-                              band_R=10,
-                              band_G=50,
-                              band_B=150,
-                              flag_save=True,
-                              save_path='./'):
+def green_plant_segmentation_batch(hyp_data_path,
+                                   model_name_vnir='',
+                                   model_name_swir='',
+                                   model_path='./',
+                                   gamma=0.8,
+                                   flag_remove_noise=False,
+                                   white_offset_top=0.1,
+                                   white_offset_bottom=0.9,
+                                   band_R=10,
+                                   band_G=50,
+                                   band_B=150,
+                                   flag_save=True,
+                                   save_path='./'):
     """
     Conduct green plant segmentaion for the WIWAM hyprspectral data uisng pre-trained models.
     :param hyp_data_path: Path of WIWAN hyperspectral data.
@@ -353,6 +485,12 @@ def green_plant_segmentation(hyp_data_path,
     :param flag_save: Flage for the saving the BW and pseudo image
     :param save_path: Path for saving the image.
     :return: 0
+
+    Author: Huajina Liu
+    Email: huajian.liu@adelaide.edu.au
+
+    Date: Otc 13 2021
+    Version: 0.0
     """
 
     # -------------------------------------------------------------
@@ -397,97 +535,33 @@ def green_plant_segmentation(hyp_data_path,
         # ...........
         data = envi_funs.calibrate_hyper_data(raw_data['white'], raw_data['dark'], raw_data['plant'], white_offset_top,
                                               white_offset_bottom)
-        # .......
-        # Smooth
-        # .......
-        # Load model
+
+        # ...........
+        # Segmentation
+        # ...........
+        wavelength = np.zeros((meta_plant.metadata['Wavelength'].__len__(),))
+        for j in range(wavelength.size):
+            wavelength[j] = float(meta_plant.metadata['Wavelength'][j])
+
         if hyp_name[i][0:4] == 'vnir':
-            model_record = np.load(model_path + '/' + model_name_vnir, allow_pickle=True).flat[0]
-
-        elif hyp_name[i][0:4] == 'swir':
-            model_record = np.load(model_path + '/' + model_name_swir, allow_pickle=True).flat[0]
-
+            model_name = model_name_vnir
         else:
-            print('Neither vnir or swir data. Model cannot be loaded!')
-            break
+            model_name = model_name_swir
 
-        model = model_record['model']
-        record = model_record['record']
-
-        # Reshape
-        row = data.shape[0]
-        col = data.shape[1]
-
-        # R, G and B bands for later use
-        R = data[:, :, band_R].reshape((row, col, 1))
-        G = data[:, :, band_G].reshape((row, col, 1))
-        B = data[:, :, band_B].reshape((row, col, 1))
-
-        data = data.reshape((row * col, data.shape[2]), order='C')
-
-        # Smooth
-        data = pp.smooth_savgol_filter(data, record['window length of smooth filter'],
-                                       record['polyorder of smooth filter'])
-        data[data < 0] = 0
-
-        # ..........
-        # Resampling
-        # ..........
-        wave = meta_plant.metadata['Wavelength']
-        wave = np.asarray(wave).astype(np.float)
-        wave_model = record['wave_model']
-        data = pp.spectral_resample(data, wave, wave_model)
-
-        # ..............
-        # Classification
-        # ..............
-        # hc2hhsi
-        data = data.reshape((row, col, data.shape[1]))
-        data, saturation, intensity = tf.hc2hhsi(data)
-
-        # Reshape to 2D for OneClassSVM_swir_hh
-        data = data.reshape((row * col, data.shape[2]), order='C')
-
-        # Classification
-        try:
-            classes = model.predict(data)
-        except ValueError:
-            error_ms = 'Value error after hc2hhsi in ' + hyp_name[i]
-            print(error_ms)
-            error_report.append(error_ms)
-            number_pro += 1
-
-        # .............
-        # Make BW image
-        # .............
-        bw = classes.reshape((row, col), order='C')
-        bw[bw == -1] = False
-        bw[bw == 1] = True
-
-        # Remove noise in BW image
-        if flag_remove_noise:
-            # Erosion and reconstruction
-            selem = np.ones((3, 3))
-            bw_ero = morphology.binary_erosion(bw, selem=selem)
-            bw = morphology.reconstruction(bw_ero, bw)
-
-            # Revove_samll_holes only accept bool type
-            bw = bw.astype(bool)
-            bw = morphology.remove_small_holes(bw)
+        bw, pseu = green_plant_segmentation(data,
+                                            wavelength,
+                                            path_segmentation_model=model_path,
+                                            name_segmentation_model=model_name,
+                                            band_R=band_R,
+                                            band_G=band_G,
+                                            band_B=band_B,
+                                            gamma=gamma,
+                                            flag_remove_noise=flag_remove_noise)
 
         # ............
         # Save results
         # ............
         if flag_save:
-            # Border
-            border = np.logical_and(bw, np.bitwise_not(morphology.binary_erosion(bw)))
-
-            R[border] = 1
-            G[border] = 0
-            B[border] = 0
-            pseu = np.concatenate((R, G, B), axis=2)
-            pseu = exposure.adjust_gamma(pseu, gamma)
-
             plt.imsave(save_path + '/' + hyp_name[i] + '_bw.png', bw, cmap='gray')
             plt.imsave(save_path + '/' + hyp_name[i] + '_pseu.png', pseu)
 
@@ -504,20 +578,100 @@ def green_plant_segmentation(hyp_data_path,
     return 0
 
 
+def average_ref_under_mask(data,
+                           mask,
+                           flag_smooth=True,
+                           window_length=21,
+                           polyorder=3,
+                           flag_check=False,
+                           band_ind=20):
+    """
+    Calculate the average reflectance of the pixels of a hypercube under a mask.
+    :param data: A calibrated hypercube in float ndarray format
+    :param mask: A Bool image in which the pixels of object is True and background is False.
+    :param flag_smooth: The flag to smooth the reflectance curve or not.
+    :param window_length: The window length of SAVGOL filter.
+    :param polyorder: The polyorder of SAVGOL filter.
+    :param flag_check: The flag to check the result.
+    :param band_ind: The band index for checking the results.
+    :return: The average reflectance of the pixels under the mask.
+
+    Author: Huajian Liu
+    Email: huajian.liu@adelaide.edu.au
+    Version: 0.0 date: Oct 14 2021
+    """
+
+    import sys
+    from pathlib import Path
+    sys.path.append(Path(__file__).parent.parent.parent)
+    from appf_toolbox.hyper_processing import pre_processing as pp
+    from matplotlib import pyplot as plt
+
+    # Check mask
+    if not mask.any():
+        print('The maks is all-zeros. ')
+        return np.zeros((data.shape[2], ))
+    else:
+        # Take out pixels under the mask
+        data[mask==0]=0
+
+        # Check mask
+        if flag_check:
+            fig1, af1 = plt.subplots(3, 1)
+            af1[0].imshow(data[:, :, band_ind], cmap='gray')
+            af1[0].set_title('Image of band ' + str(band_ind))
+
+        # Reshape and remove zero-rows
+        data = data.reshape((data.shape[0] * data.shape[1], data.shape[2]), order='C')
+        zero_row_ind = np.where(~data.any(axis=1))[0]
+        data = np.delete(data, zero_row_ind, axis=0)
+
+        # Average
+        ave_ref = np.mean(data, axis=0)
+
+        # Check
+        if flag_check:
+          for ref_ind in range(0, data.shape[0], int(data.shape[0]/10)):
+                af1[1].plot(data[ref_ind], linestyle='dashed')
+          af1[1].set_ylabel('Reflectance', fontsize=12, fontweight='bold')
+          af1[1].set_title('Reflectance before smoothing.')
+          af1[1].plot(ave_ref, color='red', label='Average ref')
+          plt.legend()
+
+         # Smooth
+        if flag_smooth:
+            data = pp.smooth_savgol_filter(data, window_length, polyorder)
+            data[data < 0] = 0
+
+            # Average
+            ave_ref = np.mean(data, axis=0)
+
+            if flag_check:
+                for ref_ind in range(0, data.shape[0], int(data.shape[0]/10)):
+                    af1[2].plot(data[ref_ind], linestyle='dashed')
+                af1[2].set_ylabel('Reflectance', fontsize=12, fontweight='bold')
+                af1[2].set_title('Reflectance after smoothing.')
+                af1[2].plot(ave_ref, color='red', label='Average ref')
+                plt.legend()
+                plt.show()
+
+        return ave_ref
+
+
 ########################################################################################################################
-# Calculate the average reflectance of crops.
+# Calculate the average reflectance of crops for a wiwam hyp-image
 ########################################################################################################################
-def ave_ref(hyp_path,
-             hyp_name,
-             mask,
-             flag_smooth=True,
-             window_length=21,
-             polyorder=3,
-             flag_check=False,
-             band_ind=50,
-             ref_ind=50,
-             white_offset_top=0.1,
-             white_offset_bottom=0.9):
+def ave_ref_under_mask_wiwam_batch(hyp_path,
+                                   hyp_name,
+                                   mask,
+                                   flag_smooth=True,
+                                   window_length=21,
+                                   polyorder=3,
+                                   flag_check=False,
+                                   band_ind=50,
+                                   ref_ind=50,
+                                   white_offset_top=0.1,
+                                   white_offset_bottom=0.9):
     """
     Calculate the average reflectance of crops using a mask (BW).
     If the mask is all-zeros, the average reflectance is set to np.zeros((1, wavelengths.shape[0])).
@@ -564,47 +718,15 @@ def ave_ref(hyp_path,
     wavelengths = np.asarray(wavelengths)
     wavelengths = wavelengths.astype(float)
 
-    if not mask.any():
-        print('Error in ' + hyp_path + '/' + hyp_name)
-        print('The maks is all-zeros. ')
-        return np.zeros((wavelengths.shape[0], )), wavelengths
-    else:
-        # Take out pixels under the mask
-        data[mask==0]=0
-
-        # Check mask
-        if flag_check:
-            fig1, af1 = plt.subplots(1, 1)
-            af1.imshow(data[:, :, band_ind], cmap='gray')
-            af1.set_title('Band ' + str(band_ind) + '@' + str(wavelengths[band_ind]) + 'nm')
-            # plt.show()ave_ref
-
-        # Reshape and remove zero-rows
-        data = data.reshape((data.shape[0] * data.shape[1], data.shape[2]), order='C')
-        zero_row_ind = np.where(~data.any(axis=1))[0]
-        data = np.delete(data, zero_row_ind, axis=0)
-
-        # Check
-        if flag_check:
-            fig2, af2 = plt.subplots(1, 1)
-            af2.plot(wavelengths, data[ref_ind], color='blue', label='A random ref without smooth')
-            af2.set_xlabel('Wavelength (nm)', fontsize=12, fontweight='bold')
-            af2.set_ylabel('Reflectance', fontsize=12, fontweight='bold')
-
-         # Smooth
-        if flag_smooth:
-            data = pp.smooth_savgol_filter(data, window_length, polyorder)
-            data[data < 0] = 0
-
-            if flag_check:
-                af2.plot(wavelengths, data[ref_ind], color='green', label='A random ref with smooth')
-                af2.set_title('A random and average reflectance for check')
-
-        # Average
-        ave_ref = np.mean(data, axis=0)
-        if flag_check:
-            af2.plot(wavelengths, ave_ref, color='red', label='Average ref')
-            plt.legend()
-            plt.show()
+    # -------------------------------------------------------------
+    # Average
+    # -------------------------------------------------------------
+    ave_ref = verage_ref_under_mask(data,
+                                    mask,
+                                    flag_smooth=flag_smooth,
+                                    window_length=window_length,
+                                    polyorder=polyorder,
+                                    flag_check=flag_check,
+                                    band_ind=band_ind)
 
     return ave_ref, wavelengths
