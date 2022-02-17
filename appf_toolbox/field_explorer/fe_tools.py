@@ -438,7 +438,11 @@ def fuse_subregion_fx17_to_fx10(data_path,
             'col_fx17_accurate': record_global_col_fx17_accu,
             'search_radius': search_radius,
             'data_name_fx10': data_name_fx10,
-            'data_name_fx17': data_name_fx17}
+            'data_name_fx17': data_name_fx17,
+            'meta_data_fx10': meta_data_fx10,
+            'meta_data_fx17': meta_data_fx17,
+            'num_bands_fx10_fused': wave_fx10.shape[0],
+            'num_bands_fx17_fused': wave_fx17.shape[1]}
 
     if flag_save:
         from sklearn.externals import joblib

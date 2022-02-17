@@ -260,6 +260,7 @@ def average_classification_metrics(record_cv):
 
 
 def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, random_state=0,
+                       note='',
                        flag_save=False,
                        file_name_save='cv_record'):
     """
@@ -394,7 +395,8 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
               'total samples': total_samples,
               'classes': str(classes),
               'count in each class': str(counts),
-              'final model': final_model}
+              'final model': final_model,
+              'Note': note}
 
     # Save
     if flag_save:
@@ -446,4 +448,186 @@ def tune_svm_classification(input,
     tuned_model = SVC(**optimal_pars).fit(input, label)
     return tuned_model
 
+
+def make_class_map(hyp_data,
+                   wavelength,
+                   seg_model_path,
+                   seg_model_name,
+                   classification_model_path,
+                   classification_model_name,
+                   band_r=97,
+                   band_g=52,
+                   band_b=14,
+                   gamma=0.7,
+                   flag_remove_noise=True,
+                   flag_figure=False):
+
+    """
+    Make a 2D classification map of a 3D hypercube based on trained crop segmentation model and classification model.
+
+    :param hyp_data: A calibrated 3D hypercube of row x col x dim. Float format in the range of [0, 1]
+    :param wavelength: The corresponding wavelengths of the hypercube.
+    :param seg_model_path: The path to save the crop segmentation model.
+    :param seg_model_name: The name of the crop segmentation model.
+    :param classification_model_path: The path of the classification model.
+    :param classification_model_name: The name of the classification model.
+    :param band_r: The red band number to create a pseudo RGB image. Default is 97.
+    :param band_g: The green band number to create a pseudo RGB image. Default is 52.
+    :param band_b: The blue band number to create a pseddo RGB image. Default is 14.
+    :param gamma: The gamma value for exposure adjustment. Default is 0.7
+    :param flag_remove_noise: The flat to remove noise or not in the crop-segmented image.
+    :param flag_figure: The flat to show the result or not.
+    :return: A dictionary contain the results of crop segmentation and the map.
+
+    Version 0 Only support 2C-classification
+    Data: Feb 14 2022
+    Author: Huajian Liu
+    """
+
+    import sys
+    from pathlib import Path
+    sys.path.append(Path(__file__).parent.parent.parent)
+    from appf_toolbox.hyper_processing import transformation as tf
+    from appf_toolbox.hyper_processing import pre_processing as pp
+    from matplotlib import pyplot as plt
+    import joblib as joblib
+    import numpy as np
+    from skimage import exposure
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Crop segmentation
+    # ------------------------------------------------------------------------------------------------------------------
+    print('Conducting crop segmentation......')
+    bw_crop, pseu_crop = pp.green_plant_segmentation(hyp_data,
+                                                     wavelength,
+                                                     seg_model_path,
+                                                     seg_model_name,
+                                                     band_R=band_r,
+                                                     band_G=band_g,
+                                                     band_B=band_b,
+                                                     gamma=gamma,
+                                                     flag_remove_noise=flag_remove_noise,
+                                                     flag_check=flag_figure)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Load model
+    # ------------------------------------------------------------------------------------------------------------------
+    print('Creating maps......')
+    # Load model
+    classification_model = joblib.load(classification_model_path + '/' + classification_model_name)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Pre-processing
+    # ------------------------------------------------------------------------------------------------------------------
+    # Save RGB for showing results
+    r = hyp_data[:, :, band_r].copy()
+    g = hyp_data[:, :, band_g].copy()
+    b = hyp_data[:, :, band_b].copy()
+    wave_r = wavelength[band_r]
+    wave_g = wavelength[band_g]
+    wave_b = wavelength[band_b]
+
+    # Smooth
+    (n_row, n_col, _) = hyp_data.shape
+    hyp_data = hyp_data.reshape(n_row * n_col, hyp_data.shape[2], order='c')
+    hyp_data = pp.smooth_savgol_filter(hyp_data,
+                                       window_length=classification_model['Note']['smooth_window_length'],
+                                       polyorder=classification_model['Note']['smooth_window_polyorder'])
+    hyp_data[hyp_data < 0] = 0
+
+    # Resampling
+    hyp_data = pp.spectral_resample(hyp_data, wavelength, classification_model['Note']['wavelengths used in the model'])
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Transformation
+    # ------------------------------------------------------------------------------------------------------------------
+    if classification_model['Note']['data_transformation'] == 'hyp-hue':
+        # hc2hhsi
+        hyp_data, _, _ = tf.hc2hhsi(hyp_data.reshape(n_row, n_col, hyp_data.shape[1]))
+        hyp_data = hyp_data.reshape(hyp_data.shape[0] * hyp_data.shape[1], hyp_data.shape[2])
+    else:
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # Make map
+    # ------------------------------------------------------------------------------------------------------------------
+    # Predict
+    bw_cl = classification_model['final model'].predict(hyp_data) # 1D
+    bw_cl = bw_cl.reshape(n_row, n_col) # 2D
+    bw_cl = bw_cl.astype(bool)
+    bw_cl[bw_crop==False] = False
+
+    # Make a pseudo image of map
+    r[bw_cl == True] = 1
+    g[bw_cl == True] = 0
+    b[bw_cl == True] = 0
+    pseu_cl = np.concatenate((r.reshape(n_row, n_col, 1),
+                              g.reshape(n_row, n_col, 1),
+                              b.reshape(n_row, n_col, 1)),
+                             axis=2)
+
+    pseu_cl = exposure.adjust_gamma(pseu_cl, gamma)
+
+    # Show result
+    if flag_figure:
+        fig, ax = plt.subplots(1, 2)
+        fig.suptitle('Classification map')
+        ax[0].imshow(bw_cl, cmap='gray')
+        ax[0].set_title('BW of classification')
+        ax[1].imshow(pseu_cl)
+        ax[1].set_title('Pseudo RGB R=' + str(wave_r) + ' G=' + str(wave_g) + ' B=' + str(wave_b))
+        plt.show()
+
+    print('All done!')
+
+    return {'bw_crop': bw_crop,
+            'pseu_crop': pseu_crop,
+            'bw_classification': bw_cl,
+            'pseu_classification': pseu_cl}
+
+
+# ########################################################################################################################
+# # Demo of make_class_map
+# ########################################################################################################################
+# if __name__ == "__main__":
+#     import sys
+#     import numpy as np
+#     sys.path.append('/media/huajian/Files/python_projects/appf_toolbox_project')
+#     from appf_toolbox.hyper_processing import envi_funs
+#
+#     # Input parameters
+#     data_path = '/media/huajian/Files/Data/crown_rot_0590/wiw_top_view_examples'
+#     data_name = 'vnir_100_140_9064_2021-08-10_01-08-07'
+#
+#     seg_model_path = '/media/huajian/Files/python_projects/p12_green_segmentation/green_seg_model_20220201'
+#     seg_model_name = 'record_OneClassSVM_vnir_hh.sav'
+#
+#     classification_model_path = '/media/huajian/Files/python_projects/crown_rot_0590/crown_rot_0590_processed_data/' \
+#                         'crown_rot_0590_top_view/2c_models'
+#     classification_model_name = 'model_svm_2c_vnir_hyp-hue_top_view_2021-08-03.sav'
+#
+#     # Read the data
+#     raw_data, meta_plant = envi_funs.read_hyper_data(data_path, data_name)
+#
+#     wavelengths = np.zeros((meta_plant.metadata['Wavelength'].__len__(),))
+#     for i in range(wavelengths.size):
+#         wavelengths[i] = float(meta_plant.metadata['Wavelength'][i])
+#
+#     # Calibrate the data
+#     hypcube = envi_funs.calibrate_hyper_data(raw_data['white'], raw_data['dark'], raw_data['plant'],
+#                                              trim_rate_t_w=0.1, trim_rate_b_w=0.95)
+#
+#     # Make map
+#     map = make_class_map(hypcube,
+#                          wavelengths,
+#                          seg_model_path,
+#                          seg_model_name,
+#                          classification_model_path,
+#                          classification_model_name,
+#                          band_r=97,
+#                          band_g=52,
+#                          band_b=14,
+#                          gamma=0.7,
+#                          flag_remove_noise=True,
+#                          flag_figure=True)
 

@@ -330,9 +330,9 @@ def green_plant_segmentation(data,
                              wavelength,
                              path_segmentation_model,
                              name_segmentation_model,
-                             band_R=300,
-                             band_G=200,
-                             band_B=100,
+                             band_R=97,
+                             band_G=52,
+                             band_B=14,
                              gamma=0.8,
                              flag_remove_noise=True,
                              flag_check=False):
@@ -380,9 +380,9 @@ def green_plant_segmentation(data,
     col = data.shape[1]
 
     # R, G and B bands for later use
-    R = data[:, :, band_R].reshape((row, col, 1))
-    G = data[:, :, band_G].reshape((row, col, 1))
-    B = data[:, :, band_B].reshape((row, col, 1))
+    R = data[:, :, band_R].reshape((row, col, 1)).copy()
+    G = data[:, :, band_G].reshape((row, col, 1)).copy()
+    B = data[:, :, band_B].reshape((row, col, 1)).copy()
 
     data = data.reshape((row * col, data.shape[2]), order='C')
 
@@ -413,8 +413,8 @@ def green_plant_segmentation(data,
     ####################################################################################################################
     # BW image
     bw = classes.reshape((row, col), order='C')
-    bw[bw == -1] = False
-    bw[bw == 1] = True
+    bw[bw == -1] = 0
+    # bw[bw == 1] = 1
 
     # Remove noise in BW image
     if flag_remove_noise:
@@ -428,7 +428,7 @@ def green_plant_segmentation(data,
         bw = morphology.remove_small_holes(bw)
 
     if np.sum(bw) == 0:
-        print('No pixels of green plants was detected.')
+        print('No pixels of green plants was detected!')
 
     # pseu image
     border = np.logical_and(bw, np.bitwise_not(morphology.binary_erosion(bw)))
@@ -446,7 +446,10 @@ def green_plant_segmentation(data,
         from matplotlib import pyplot as plt
         fig, ax = plt.subplots(1, 2)
         ax[0].imshow(bw, cmap='gray')
+        ax[0].set_title('BW image')
         ax[1].imshow(pseu)
+        ax[1].set_title('Pseudo image R=' + str(wavelength[band_R]) + ' G=' + str(wavelength[band_G]) + ' B=' + str(wavelength[band_B]))
+        fig.suptitle('Crop segmentation')
         plt.show()
 
     return bw, pseu
@@ -730,3 +733,6 @@ def ave_ref_under_mask_wiwam_batch(hyp_path,
                                     band_ind=band_ind)
 
     return ave_ref, wavelengths
+
+
+#
