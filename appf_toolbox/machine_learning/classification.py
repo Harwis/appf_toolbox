@@ -460,7 +460,9 @@ def make_class_map(hyp_data,
                    band_b=14,
                    gamma=0.7,
                    flag_remove_noise=True,
-                   flag_figure=False):
+                   flag_figure=False,
+                   flag_remove_border=False,
+                   selem_size=3):
 
     """
     Make a 2D classification map of a 3D hypercube based on trained crop segmentation model and classification model.
@@ -477,6 +479,10 @@ def make_class_map(hyp_data,
     :param gamma: The gamma value for exposure adjustment. Default is 0.7
     :param flag_remove_noise: The flat to remove noise or not in the crop-segmented image.
     :param flag_figure: The flat to show the result or not.
+    :param flag_remove_border: For crop segmentation. The flag to remove the borders of the crops. The size of the
+           border is determined by selem_size. Default is False.
+    :param selem_size: For crop segmentation. If flag_remove_border set to True, erosion will be conducted using selem
+           np.ones((selem_size, selem_size)). Default is 3.
     :return: A dictionary contain the results of crop segmentation and the map.
 
     Version 0 Only support 2C-classification

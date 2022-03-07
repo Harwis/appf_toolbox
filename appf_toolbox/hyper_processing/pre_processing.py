@@ -335,7 +335,9 @@ def green_plant_segmentation(data,
                              band_B=14,
                              gamma=0.8,
                              flag_remove_noise=True,
-                             flag_check=False):
+                             flag_check=False,
+                             flag_remove_border=False,
+                             selem_size=3):
     """
     Conduct green plant segmentation using a pre-trained model.
     :param data: Calibrated hypercube in float ndarray format.
@@ -348,6 +350,10 @@ def green_plant_segmentation(data,
     :param gamma: gamma value for exposure adjustment.
     :param flag_remove_noise: Flag to remove the noise in BW image. Default is True.
     :param flag_check: Flag to show the results of segmenation.
+    :param flag_remove_border: The flag to remove the borders of the crops. The size of the border is determined by
+           selem_size. Default is False.
+    :param selem_size: If flag_remove_border set to True, erosion will be conducted using selem np.ones((selem_size,
+           selem_size)). Default is 3.
     :return: The BW image and pseu image.
 
     Author: Huajina Liu
@@ -426,6 +432,11 @@ def green_plant_segmentation(data,
         # Remove_small holes; only accept bool type
         bw = bw.astype(bool)
         bw = morphology.remove_small_holes(bw)
+
+    # Remove crop borders
+    if flag_remove_border:
+        selem = np.ones((selem_size, selem_size))
+        bw = morphology.binary_erosion(bw, selem=selem)
 
     if np.sum(bw) == 0:
         print('No pixels of green plants was detected!')
