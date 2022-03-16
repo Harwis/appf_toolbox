@@ -120,6 +120,8 @@ def fuse_subregion_fx17_to_fx10(data_path,
     import numpy as np
     from datetime import datetime
     from skimage.util import compare_images
+    import joblib
+    # from sklearn.externals import joblib
 
     start_time = datetime.now()
     print('------------------------------------------------------')
@@ -439,13 +441,10 @@ def fuse_subregion_fx17_to_fx10(data_path,
             'search_radius': search_radius,
             'data_name_fx10': data_name_fx10,
             'data_name_fx17': data_name_fx17,
-            'meta_data_fx10': meta_data_fx10,
-            'meta_data_fx17': meta_data_fx17,
             'num_bands_fx10_fused': wave_fx10.shape[0],
-            'num_bands_fx17_fused': wave_fx17.shape[1]}
+            'num_bands_fx17_fused': wave_fx17.shape[0]}
 
     if flag_save:
-        from sklearn.externals import joblib
         if name_save == '':
             name_save = data_name_fx10[-27:-5] + '_line_' + str(sta_line_fx10) + '_to_' + str(end_line_fx10)
         else:
@@ -525,7 +524,10 @@ def fuse_fx17_to_fx10(data_path,
     # Import tools
     import spectral.io.envi as envi
     from datetime import datetime
-    from sklearn.externals import joblib
+    # from sklearn.externals import joblib
+    import joblib
+    import multiprocessing
+    multiprocessing.set_start_method('spawn')
 
     start = datetime.now()
 
