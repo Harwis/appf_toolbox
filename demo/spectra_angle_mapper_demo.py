@@ -1,9 +1,12 @@
 from appf_toolbox.hyper_processing import transformation as tf
 import numpy as np
 from matplotlib import pyplot as plt
+from pathlib import Path
 
 # Parameters
-data_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
+# data_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
+data_path = Path(__file__).parent.parent.parent
+data_path = data_path.drive +'/' + data_path.name +  '/appf_toolbox_demo_data'
 data_name = 'hypcube.npy'
 id_band = 100
 row_target1 = 214 # Target1 is a spectral signature of the leaf

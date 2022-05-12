@@ -5,7 +5,8 @@ import appf_toolbox.hyper_processing.pre_processing as pp
 
 print(BandResampler.__doc__)
 
-data_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
+# data_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
+data_path = 'E:/python_projects/appf_toolbox_demo_data'
 data_name = 'FieldSpec_demo_data.npy'
 data_id = 1
 

@@ -97,5 +97,6 @@ ax2_f1.plot(wavelengths, a_ref, 'r', linewidth=2, label='Smoothed and removed no
 ax2_f1.set_xlabel('Wavelengths (nm)', fontsize=12, fontweight='bold')
 ax2_f1.set_ylabel('Reflectance', fontsize=12, fontweight='bold')
 ax2_f1.legend()
+plt.show()
 
 

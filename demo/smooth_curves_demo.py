@@ -30,6 +30,10 @@ a_ref_savgol = signal.savgol_filter(ref, window_length=window_length, polyorder=
 
 ref_sm = pp.smooth_savgol_filter(ref, window_length, polyorder, flag_fig=True, id_x=10)
 
+# Smooting could make the value out of the range of [0, 1]. Make the values of reflectance to [0, 1]
+ref_sm[ref_sm < 0] = 0
+ref_sm[ref_sm > 1] = 1
+
 # Option 2: spline
 # Input must be a 2D matrix?
 a_ref_spline = signal.spline_filter(ref, lmbda=lmbda)[data_id]

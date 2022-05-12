@@ -7,8 +7,8 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = '/media/huajian/TOSHIBA EXT/crown_rot_0590_side_view'
-folder_name = 'vnir_98_136_8665_2021-07-15_03-02-34'
+folder_path = 'E:/Data/snail_warooka_wiwam_20220408'
+folder_name = 'swir_104_145_9698_2022-04-08_02-27-56'
 
 
 # Will read the wavelength on every band_interval
@@ -30,6 +30,7 @@ print('The size of dark ref: ', raw_data['dark'].shape)
 print('The size of object: ', raw_data['plant'].shape)
 n_samples = meta_target.ncols
 n_bands = meta_target.nbands
+
 # The corresponding wavelength
 wavelengths = meta_target.metadata['Wavelength']
 wavelengths = np.asarray(wavelengths)
@@ -115,7 +116,7 @@ for ind_band in range(0, n_bands + 1, band_interval):
     if ind_noise_type2.shape[0] != 0:
         ax4.plot(ind_noise_type2[:, 1], ind_noise_type2[:, 0], 'y+')
 
-    if ind_band == n_bands * band_interval:
+    if n_bands - ind_band - 1 < band_interval:
         plt.show()
     else:
         plt.pause(1)

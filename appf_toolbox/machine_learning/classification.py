@@ -262,7 +262,7 @@ def average_classification_metrics(record_cv):
 def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, random_state=0,
                        note='',
                        flag_save=False,
-                       file_name_save='cv_record'):
+                       file_name_prefix='cv_record'):
     """
     Perform repeated k-folds cross validation of classification.
 
@@ -275,7 +275,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     :param random_state: Random state for cross-validation. Default is 0
     :param flag_save: Flag to save the record. If set to True, it will save the record as a .save file in the present
            working directory. Default is False
-    :param file_name_save: The file name to save the record. Default is 'cv_record'.
+    :param file_name_prefix: The file name to save the record. Default is 'cv_record'.
     :return: If have valid record, it returns a dictionary recording the report of repeated cross validation; otherwise
            it return -1.
 
@@ -372,7 +372,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     print('Summary of ' + str(n_splits) + '-fold cross validation with ' + str(n_repeats) + ' repeats')
     print('Total samples: ', total_samples)
     print('Classes:', classes)
-    print('Count in each classes: ', counts)
+    print('Count in each class: ', counts)
     print('Average metrics of train: ')
     print(ave_metrics['ave_metrics_train'])
     print('Average metrics of validation: ')
@@ -396,12 +396,12 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
               'classes': str(classes),
               'count in each class': str(counts),
               'final model': final_model,
-              'Note': note}
+              'note': note}
 
     # Save
     if flag_save:
-        file_name_save = file_name_save + '_' + datetime.now().strftime('%y-%m-%d-%H-%M-%S') + '.sav'
-        joblib.dump(record, file_name_save)
+        file_name_prefix = file_name_prefix + '_' + datetime.now().strftime('%y-%m-%d-%H-%M-%S') + '.sav'
+        joblib.dump(record, file_name_prefix)
 
     return record
 
@@ -499,6 +499,7 @@ def make_class_map(hyp_data,
     import joblib as joblib
     import numpy as np
     from skimage import exposure
+    from sklearn.decomposition import PCA
 
     # ------------------------------------------------------------------------------------------------------------------
     # Crop segmentation
@@ -543,22 +544,45 @@ def make_class_map(hyp_data,
 
     # Resampling
     hyp_data = pp.spectral_resample(hyp_data, wavelength, classification_model['Note']['wavelengths used in the model'])
+    n_band = hyp_data.shape[1]
 
     # ------------------------------------------------------------------------------------------------------------------
     # Transformation
     # ------------------------------------------------------------------------------------------------------------------
-    if classification_model['Note']['data_transformation'] == 'hyp-hue':
-        # hc2hhsi
-        hyp_data, _, _ = tf.hc2hhsi(hyp_data.reshape(n_row, n_col, hyp_data.shape[1]))
-        hyp_data = hyp_data.reshape(hyp_data.shape[0] * hyp_data.shape[1], hyp_data.shape[2])
+    if classification_model['Note']['data_transformation'] == 'none':
+        print('Input data is reflectance.')
+        input = hyp_data
+    elif classification_model['Note']['data_transformation'] == 'pca':
+        print('Input data is PCA n_pc = ' + str(classification_model['Note']['number_components_pca']))
+        pca = PCA(n_components=classification_model['Note']['number_components_pca'])
+        pcs = pca.fit_transform(hyp_data)
+        print('Explained variance: ')
+        print(pca.explained_variance_)
+        print('Explained variance ratio: ')
+        print(pca.explained_variance_ratio_)
+        print('Cumulative explained variance ratio: ')
+        print(pca.explained_variance_ratio_.cumsum())
+
+        input = pcs
+
+    elif classification_model['Note']['data_transformation'] == 'hyp-hue':
+        print('Input data is hyp-hue')
+        hyp_data = hyp_data.reshape(n_row, n_col, n_band)
+        hyp_data, _, _ = tf.hc2hhsi(hyp_data) # after this, hyp_data is hyp_hue (Inplace operation to save memory).
+        input = hyp_data.reshape(n_row * n_col, n_band - 1)
+
+    elif classification_model['Note']['data_transformation'] == 'snv':
+        print('Input data is SNV')
+        input = tf.snv(hyp_data)
+
     else:
-        pass
+        print('Wrong transformation method!')
 
     # ------------------------------------------------------------------------------------------------------------------
     # Make map
     # ------------------------------------------------------------------------------------------------------------------
     # Predict
-    bw_cl = classification_model['final model'].predict(hyp_data) # 1D
+    bw_cl = classification_model['final model'].predict(input) # 1D
     bw_cl = bw_cl.reshape(n_row, n_col) # 2D
     bw_cl = bw_cl.astype(bool)
     bw_cl[bw_crop==False] = False
