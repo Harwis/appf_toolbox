@@ -482,7 +482,9 @@ def green_plant_segmentation_batch(hyp_data_path,
                                    band_G=50,
                                    band_B=150,
                                    flag_save=True,
-                                   save_path='./'):
+                                   save_path='./',
+                                   filename_list=None,
+                                   function=None):
     """
     Conduct green plant segmentaion for the WIWAM hyprspectral data uisng pre-trained models.
     :param hyp_data_path: Path of WIWAN hyperspectral data.
@@ -498,7 +500,11 @@ def green_plant_segmentation_batch(hyp_data_path,
     :param band_B: Band number of B for making pseudo image
     :param flag_save: Flage for the saving the BW and pseudo image
     :param save_path: Path for saving the image.
-    :return: 0
+    :param filename_list: list of WIWAM hyperspectral data files to include
+    :param function: a function with the signature `function(meta_plant, data, bw, pseu)` which
+        can be performed to return a result for each processed image.
+    :return: 0 if function is not included, else a dictionary of the results of the
+        function for each scan name.
 
     Author: Huajina Liu
     Email: huajian.liu@adelaide.edu.au
@@ -522,8 +528,13 @@ def green_plant_segmentation_batch(hyp_data_path,
     from os import walk
 
     # Read the data names for processing
-    for (hyp_path, hyp_name, hyp_files) in walk(hyp_data_path):
-        break
+    if filename_list is None:
+        for (hyp_path, hyp_name, hyp_files) in walk(hyp_data_path):
+            break
+    else:
+        hyp_name = filename_list
+
+    returns = dict()
 
     # ------------------------------------------------------------
     # Process the data
@@ -572,6 +583,9 @@ def green_plant_segmentation_batch(hyp_data_path,
                                             gamma=gamma,
                                             flag_remove_noise=flag_remove_noise)
 
+        if function is not None:
+            returns[hyp_name[i]] = function(meta_plant, data, bw, pseu)
+
         # ............
         # Save results
         # ............
@@ -589,7 +603,7 @@ def green_plant_segmentation_batch(hyp_data_path,
     print('Error report: ')
     print(error_report)
 
-    return 0
+    return 0 if function is None else returns
 
 
 def average_ref_under_mask(data,
