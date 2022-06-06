@@ -7,8 +7,8 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = 'E:/Data/snail_warooka_wiwam_20220408'
-folder_name = 'swir_104_145_9698_2022-04-08_02-27-56'
+folder_path = 'E:/Data/mealybug_jerome_20220506'
+folder_name = 'mealybug_2022-05-06_02-46-35'
 
 
 # Will read the wavelength on every band_interval
