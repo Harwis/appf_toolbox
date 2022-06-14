@@ -12,9 +12,9 @@ from appf_toolbox.wiwam import wiwam_tools as wt
 ########################################################################################################################
 # Parameters
 ########################################################################################################################
-hyp_data_path = '/media/huajian/TOSHIBA EXT/crown_rot_0590_top_view'
+hyp_data_path = 'E:/Data/0614_ruby'
 
-barcode_hypname_path = '/media/huajian/Files/python_projects/crown_rot_0590/crown_rot_0590_processed_data/crown_rot_0590_top_view'
+barcode_hypname_path = 'C:/Users/Huajian/OneDrive/OD_projects_doc/Rubby_0614'
 barcode_hypname_file = 'barcode_hypname.xlsx'
 sheet_name = 'barcode_hypname'
 
@@ -70,11 +70,11 @@ print('A total of ' + str(error_count) + ' data is surplus data')
 # Check dark reference error
 ########################################################################################################################
 error_count = 0
-<<<<<<< HEAD
+# <<<<<<< HEAD
 print('Checking dark reference error......')
-=======
-list_error_data = []
->>>>>>> d6f0b1cd5160b226e6b478783bd9749d57034435
+# =======
+# list_error_data = []
+# >>>>>>> d6f0b1cd5160b226e6b478783bd9749d57034435
 for i in range(0, hypnames_dl.__len__()):
     if hypnames_dl[i][0:4] == 'swir':
         pass
@@ -82,8 +82,8 @@ for i in range(0, hypnames_dl.__len__()):
         flag_error = wt.check_fx10_dark_error(hyp_data_path, hypnames_dl[i], threshold=500)
         if flag_error == 1:
             error_count += 1
-            list_error_data.append(hypnames_dl[i])
+            # list_error_data.append(hypnames_dl[i])
             print(hypnames_dl[i] + ' has dark reference error.')
 print('A total of ' + str(error_count) + ' data have dark reference error')
-print(list_error_data)
+# print(list_error_data)
 
