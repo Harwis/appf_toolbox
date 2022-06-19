@@ -277,7 +277,7 @@ def rotate_hypercube(hypercube, angle, scale=1, center='middle', flag_show_img=F
 def spectral_resample(source_spectral_sig_array, source_wavelength, destination_wavelength, flag_fig=False, id_check=0):
     """
     Call spectral.BandResampler. Conduct spectral resampling.
-    :param source_spectral_sig_array: can be 1D or 2D; each row is a spectral signature
+    :param source_spectral_sig_array: can be 1D or 2D; If 2D, each row is a spectral signature
     :param source_wavelength: 1D array
     :param destination_wavelength: 1D array; should in the range of [min, max] of source_wavelength
     :param flag_fig: flag to show the result or not
@@ -330,9 +330,9 @@ def green_plant_segmentation(data,
                              wavelength,
                              path_segmentation_model,
                              name_segmentation_model,
-                             band_R=97,
-                             band_G=52,
-                             band_B=14,
+                             band_R=-50,  #97
+                             band_G=150, # 52,
+                             band_B=50, # 14,
                              gamma=0.8,
                              flag_remove_noise=True,
                              flag_check=False,
@@ -478,9 +478,9 @@ def green_plant_segmentation_batch(hyp_data_path,
                                    flag_remove_noise=False,
                                    white_offset_top=0.1,
                                    white_offset_bottom=0.9,
-                                   band_R=10,
-                                   band_G=50,
-                                   band_B=150,
+                                   band_R=-50,  # 97
+                                   band_G=150,  # 52,
+                                   band_B=50,  # 14,
                                    flag_save=True,
                                    save_path='./',
                                    filename_list=None,
@@ -526,8 +526,13 @@ def green_plant_segmentation_batch(hyp_data_path,
     from skimage import exposure
     from matplotlib import pyplot as plt
     from os import walk
+    import os
 
     # Read the data names for processing
+    if not os.path.isdir(hyp_data_path):
+        print(hyp_data_path + " does not exit!")
+        return -1
+
     if filename_list is None:
         for (hyp_path, hyp_name, hyp_files) in walk(hyp_data_path):
             break
@@ -600,21 +605,21 @@ def green_plant_segmentation_batch(hyp_data_path,
         print(hyp_name[i] + ' finished!' + ' ' + str('%.2f' % (100 * number_pro / hyp_name.__len__())) + '%',
               '(' + str(number_pro) + '/' + str(hyp_name.__len__()) + ')' )
 
-    print('Error report: ')
+    print('Read ENVI file Error report: ')
     print(error_report)
 
     return 0 if function is None else returns
 
 
-def average_ref_under_mask(data,
-                           mask,
-                           flag_smooth=True,
-                           window_length=21,
-                           polyorder=3,
-                           flag_check=False,
-                           band_ind=20):
+def statistics_under_mask(data,
+                          mask,
+                          flag_smooth=True,
+                          window_length=21,
+                          polyorder=3,
+                          flag_check=False,
+                          band_ind=20):
     """
-    Calculate the average reflectance of the pixels of a hypercube under a mask.
+    Calculate the statistics of the pixels of a hypercube under a mask.
     :param data: A calibrated hypercube in float ndarray format
     :param mask: A Bool image in which the pixels of object is True and background is False.
     :param flag_smooth: The flag to smooth the reflectance curve or not.
@@ -622,11 +627,12 @@ def average_ref_under_mask(data,
     :param polyorder: The polyorder of SAVGOL filter.
     :param flag_check: The flag to check the result.
     :param band_ind: The band index for checking the results.
-    :return: The average reflectance of the pixels under the mask.
+    :return: Statistics of the pixels under the mask.
 
     Author: Huajian Liu
     Email: huajian.liu@adelaide.edu.au
     Version: 0.0 date: Oct 14 2021
+    v0.1: 16 June, 2022 Change the name "average" to "average"
     """
 
     import sys
@@ -637,8 +643,11 @@ def average_ref_under_mask(data,
 
     # Check mask
     if not mask.any():
-        print('The maks is all-zeros. ')
-        return np.zeros((data.shape[2], ))
+        print('The mask is all-zeros. ')
+
+        # Statistics
+        ave_ref = np.zeros((data.shape[2], ))
+        std_ref = ave_ref
     else:
         # Take out pixels under the mask
         data[mask==0]=0
@@ -654,8 +663,9 @@ def average_ref_under_mask(data,
         zero_row_ind = np.where(~data.any(axis=1))[0]
         data = np.delete(data, zero_row_ind, axis=0)
 
-        # Average
+        # Average before smooth
         ave_ref = np.mean(data, axis=0)
+        std_ref = np.std(data, axis=0)
 
         # Check
         if flag_check:
@@ -663,7 +673,8 @@ def average_ref_under_mask(data,
                 af1[1].plot(data[ref_ind], linestyle='dashed')
           af1[1].set_ylabel('Reflectance', fontsize=12, fontweight='bold')
           af1[1].set_title('Reflectance before smoothing.')
-          af1[1].plot(ave_ref, color='red', label='Average ref')
+          af1[1].plot(ave_ref, color='red', linestyle='-', label='Average of ref')
+          af1[1].plot(std_ref, color='red', linestyle='-.', label='STD of ref')
           plt.legend()
 
          # Smooth
@@ -671,25 +682,32 @@ def average_ref_under_mask(data,
             data = pp.smooth_savgol_filter(data, window_length, polyorder)
             data[data < 0] = 0
 
-            # Average
-            ave_ref = np.mean(data, axis=0)
+        # Statistics
+        ave_ref = np.mean(data, axis=0)
+        std_ref = np.std(data, axis=0)
 
-            if flag_check:
-                for ref_ind in range(0, data.shape[0], int(data.shape[0]/10)):
-                    af1[2].plot(data[ref_ind], linestyle='dashed')
-                af1[2].set_ylabel('Reflectance', fontsize=12, fontweight='bold')
-                af1[2].set_title('Reflectance after smoothing.')
-                af1[2].plot(ave_ref, color='red', label='Average ref')
-                plt.legend()
-                plt.show()
+    stat = {'ave_ref': ave_ref,
+            'std_ref': std_ref,
+            'n_pixel': np.sum(mask)}
 
-        return ave_ref
+    if flag_check:
+        for ref_ind in range(0, data.shape[0], int(data.shape[0]/10)):
+            af1[2].plot(data[ref_ind], linestyle='dashed')
+        af1[2].set_ylabel('Reflectance', fontsize=12, fontweight='bold')
+        af1[2].set_title('Reflectance after smoothing.')
+        af1[2].plot(ave_ref, color='red', linestyle='-', label='Average of ref')
+        af1[2].plot(std_ref, color='red', linestyle='-.', label='STD of ref')
+        plt.legend()
+        plt.show()
+
+
+    return stat
 
 
 ########################################################################################################################
 # Calculate the average reflectance of crops for a wiwam hyp-image
 ########################################################################################################################
-def ave_ref_under_mask_wiwam_batch(hyp_path,
+def statistics_under_mask_envi_file(hyp_path,
                                    hyp_name,
                                    mask,
                                    flag_smooth=True,
@@ -701,7 +719,7 @@ def ave_ref_under_mask_wiwam_batch(hyp_path,
                                    white_offset_top=0.1,
                                    white_offset_bottom=0.9):
     """
-    Calculate the average reflectance of crops using a mask (BW).
+    Calculate the statistics of crops using a mask (BW) for a batch of WIWAM data in a folder (path).
     If the mask is all-zeros, the average reflectance is set to np.zeros((1, wavelengths.shape[0])).
     :param hyp_path: The path of the hyperspectral data for processing.
     :param hyp_name: The name of the hyperspectral data for processing.
@@ -714,10 +732,11 @@ def ave_ref_under_mask_wiwam_batch(hyp_path,
     :param ref_ind: A random reflectance of plant for check; default is 50
     :param white_offset_top: Offset of the top of white reference; default  0.1
     :param white_offset_bottom: Offset of the bottom of white reference; default  0.9
-    :return: Averaged reflectance value of crop and the corresponding wavelengths.
+    :return: Statistics of the pixels under the masks and the corresponding wavelengths.
 
     Author: Huajian Liu
-    v0: 1 March, 2021
+    v0.0: 1 March, 2021
+    v0.1: 16 June, 2022 Change the name "average" to "average"
     """
 
     # -------------------------------------------------------------
@@ -749,15 +768,16 @@ def ave_ref_under_mask_wiwam_batch(hyp_path,
     # -------------------------------------------------------------
     # Average
     # -------------------------------------------------------------
-    ave_ref = verage_ref_under_mask(data,
-                                    mask,
-                                    flag_smooth=flag_smooth,
-                                    window_length=window_length,
-                                    polyorder=polyorder,
-                                    flag_check=flag_check,
-                                    band_ind=band_ind)
+    stat = statistics_under_mask(data,
+                                mask,
+                                flag_smooth=flag_smooth,
+                                window_length=window_length,
+                                polyorder=polyorder,
+                                flag_check=flag_check,
+                                band_ind=band_ind)
 
-    return ave_ref, wavelengths
+    stat['wavelength'] = wavelengths
+
+    return stat
 
 
-#

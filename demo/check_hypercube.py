@@ -1,14 +1,14 @@
 # This demo shows how to read and calibrate the hyperspectral data in envi format.
 import sys
-sys.path.append('../appf_toolbox')
+sys.path.append('E:/python_projects/appf_toolbox_project')
 from appf_toolbox.hyper_processing import envi_funs
 from matplotlib import pyplot as plt
 import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = 'E:/Data/mealybug_jerome_20220506'
-folder_name = 'mealybug_2022-05-06_02-46-35'
+folder_path = 'E:/Data/ruby_0614'
+folder_name = 'vnir_103_143_9670_2022-04-13_22-52-10'
 
 
 # Will read the wavelength on every band_interval
