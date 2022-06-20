@@ -12,6 +12,7 @@ from appf_toolbox.hyper_processing.pre_processing import remove_jumps
 from appf_toolbox.hyper_processing import transformation as tr
 from matplotlib import pyplot as plt
 import pandas as pd
+from sklearn .decomposition import PCA
 
 ########################################################################################################################
 # Parameters
@@ -25,15 +26,16 @@ sheet_name = 'barcode_treatment_hypname'
 
 mask_path = 'E:/Data/ruby_0614_segmentation_v2'
 
-flag_trim_noisy_band = False
+flag_trim_noisy_band = True
 t_wave_1 = 450
 t_wave_2 = 1000
 t_wave_3 = 2400
 
+n_comp_pca = 20
+
 flag_smooth = True
 flag_check = False
-flag_save = False
-
+flag_save = True
 
 
 ########################################################################################################################
@@ -109,11 +111,11 @@ for a_row in barcode_treat_hypname.iterrows():
             wave_swir = wave_swir[wave_mask_swir]
             ave_ref_swir = stat_swir['ave_ref'][wave_mask_swir]
             std_ref_swir = stat_swir['std_ref'][wave_mask_swir]
-
-        ave_ref_vnir = stat_vnir['ave_ref']
-        std_ref_vnir = stat_vnir['std_ref']
-        ave_ref_swir = stat_swir['ave_ref']
-        std_ref_swir = stat_swir['std_ref']
+        else:
+            ave_ref_vnir = stat_vnir['ave_ref']
+            std_ref_vnir = stat_vnir['std_ref']
+            ave_ref_swir = stat_swir['ave_ref']
+            std_ref_swir = stat_swir['std_ref']
 
         # Cat
         wave = np.concatenate((wave_vnir, wave_swir))
@@ -191,15 +193,42 @@ if flag_save:
     column_name.append('Intensity')
     df_hhsi.columns = column_name
 
-    df_std = pd.concat([pd.DataFrame(barcode_treat_hypname, columns=['id_tag']), df_hhsi], axis=1)
-    df_std.to_excel(writer, sheet_name='Hyper-hue, saturation and intensity')
+    df_hhsi = pd.concat([pd.DataFrame(barcode_treat_hypname, columns=['id_tag']), df_hhsi], axis=1)
+    df_hhsi.to_excel(writer, sheet_name='Hyper-hue, sat and int')
 
     # SNV
     snv = tr.snv(np.asarray(ref_list))
     df_snv = pd.DataFrame(snv)
     df_snv.columns = wave
     df_snv = pd.concat([pd.DataFrame(barcode_treat_hypname, columns=['id_tag']), df_snv], axis=1)
-    df_snv.to_excel(writer, sheet_name='standard normal variate of reflectance')
+    df_snv.to_excel(writer, sheet_name='snv')
+
+    # First-order derivative
+    fir_der = tr.first_order_derivative(np.asarray(ref_list))
+    df_fir_der = pd.DataFrame(fir_der)
+    df_fir_der.columns = wave[0:-1]
+    df_fir_der = pd.concat([pd.DataFrame(barcode_treat_hypname, columns=['id_tag']), df_fir_der], axis=1)
+    df_fir_der.to_excel(writer, sheet_name='1st-der')
+
+    # Second-order derivative
+    sec_der = tr.second_order_derivative(np.asarray(ref_list))
+    df_sec_der = pd.DataFrame(sec_der)
+    df_sec_der.columns = wave[0:-2]
+    df_sec_der = pd.concat([pd.DataFrame(barcode_treat_hypname, columns=['id_tag']), df_sec_der], axis=1)
+    df_sec_der.to_excel(writer, sheet_name='2end-der')
+
+    # PCA
+    pca = PCA(n_components=n_comp_pca)
+    pcs = pca.fit_transform(np.asarray(ref_list))
+    df_pcs = pd.DataFrame(pcs)
+
+    column_name = []
+    for i in range(0, pcs.shape[1]):
+        column_name.append('pc' + str(i))
+    df_pcs.columns = column_name
+
+    df_pcs = pd.concat([pd.DataFrame(barcode_treat_hypname, columns=['id_tag']), df_pcs], axis=1)
+    df_pcs.to_excel(writer, sheet_name='Principal component')
 
     # n_pixel
     df_n_pixel = pd.DataFrame(n_pixel_list)

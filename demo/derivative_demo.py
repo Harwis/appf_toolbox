@@ -1,9 +1,7 @@
 import sys
 sys.path.append('E:/python_projects/appf_toolbox_project')
 import numpy as np
-import appf_toolbox.hyper_processing.pre_processing as pp
-
-print(pp.remove_jumps.__doc__)
+import appf_toolbox.hyper_processing.transformation as tr
 
 # Parameters:
 # data_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
@@ -19,12 +17,10 @@ data = data.flat[0]
 ref = data['reflectance']
 a_ref = ref[data_id]
 
-# Made fake jump for demo
-a_ref[ind_jump[0] + 1:] = a_ref[ind_jump[0] + 1:] + 0.1
-a_ref[ind_jump[1] + 1:] = a_ref[ind_jump[1] + 1:] - 0.05
+# 1st-order derivative
 
+a_first_dev = tr.first_order_derivative(a_ref, flag_check=True)
+first_dev = tr.first_order_derivative(ref, flag_check=True, check_interview=2)
 
-ref = pp.remove_jumps(a_ref, ind_jumps=ind_jump, flag_auto_detect_jumps=False, flag_plot_result=True)
-
-# Automatically find the jump
-ref = pp.remove_jumps(a_ref, ind_jumps=ind_jump, flag_auto_detect_jumps=True, flag_plot_result=True)
+a_first_dev = tr.second_order_derivative(a_ref, flag_check=True)
+first_dev = tr.second_order_derivative(ref, flag_check=True, check_interview=2)

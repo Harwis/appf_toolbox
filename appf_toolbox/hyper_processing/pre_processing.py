@@ -204,23 +204,6 @@ def smooth_savgol_filter(x, window_length, polyorder, deriv=0, delta=1.0, axis=-
     return x_sm
 
 
-if __name__ == '__main__':
-    print(smooth_savgol_filter_f.__doc__)
-
-    from sklearn.externals import joblib
-
-    data_path = 'demo_data'
-    data_name = 'grass_vnir_n.sav'
-    data_id = 10
-    window_length = 11
-    polyorder = 3
-    id_data = 100
-
-    ref_n = joblib.load(data_path + '/' + data_name)
-    ref = ref_n['ref']
-    data_sm = smooth_savgol_filter_f(ref, window_length, polyorder, flag_fig=True, id_x=id_data)
-
-
 ########################################################################################################################
 # rotate_hypercube()
 ########################################################################################################################
@@ -781,3 +764,20 @@ def statistics_under_mask_envi_file(hyp_path,
     return stat
 
 
+
+
+if __name__ == '__main__':
+    print(smooth_savgol_filter_f.__doc__)
+
+    from sklearn.externals import joblib
+
+    data_path = 'demo_data'
+    data_name = 'grass_vnir_n.sav'
+    data_id = 10
+    window_length = 11
+    polyorder = 3
+    id_data = 100
+
+    ref_n = joblib.load(data_path + '/' + data_name)
+    ref = ref_n['ref']
+    data_sm = smooth_savgol_filter_f(ref, window_length, polyorder, flag_fig=True, id_x=id_data)

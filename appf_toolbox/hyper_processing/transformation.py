@@ -125,3 +125,89 @@ def snv(ref, flag_fig=False):
 
     return snv
 
+
+def first_order_derivative(spec_sig, wave=[], flag_check=False, check_interview=10):
+    """
+    Calculate the 1st-order derivative of spectral singatures.
+    :param spec_sig: 1D or 2D np.ndarray. If 1D, it automatically convert it to 2D.
+    :param wave: The wavelength of the spectral signatures. Default is [].
+    :param flag_check: The flag to check the result or not.
+    :param check_interview: If flag_check set to True, it will plot the results from 0 to spec_sig.shape[0] at the
+           interview of  check_interview
+    :return: The 1st-order derivative of the spectral signatures.
+
+    Author: Huajian Liu
+    V0.0
+    Data: 6 June, 2022
+    """
+    import numpy as np
+
+    # If 1D, convert it to 2D
+    if spec_sig.shape.__len__() == 1:
+        spec_sig = spec_sig.reshape((1, spec_sig.shape[0]))
+
+    # First order derivative
+    fir_der = np.delete(spec_sig, obj=0, axis=1) - np.delete(spec_sig, obj= -1, axis=1)
+
+    # Plot
+    if flag_check:
+        from matplotlib import pyplot as plt
+
+        fig, ax_1der = plt.subplots(1, 1)
+        if wave == []:
+            for i in range(0, fir_der.shape[0], check_interview):
+                ax_1der.plot(fir_der[i])
+            ax_1der.set_xlabel('band number', fontsize=12, fontweight='bold')
+        else:
+            for i in range(0, fir_der.shape[1], check_interview):
+                ax_1der.plot(wave, fir_der)
+            ax_1der.set_xlabel('Wavelength (nm)', fontsize=12, fontweight='bold')
+        ax_1der.set_ylabel('1st der', fontsize=12, fontweight='bold')
+        ax_1der.set_title('First order derivative')
+
+    return fir_der
+
+
+def second_order_derivative(spec_sig, wave=[], flag_check=False, check_interview=10):
+    """
+        Calculate the 2end-order derivative of spectral singatures.
+        :param spec_sig: 1D or 2D np.ndarray. If 1D, it automatically convert it to 2D.
+        :param wave: The wavelength of the spectral signatures. Default is [].
+        :param flag_check: The flag to check the result or not.
+        :param check_interview: If flag_check set to True, it will plot the results from 0 to spec_sig.shape[0] at the
+               interview of  check_interview
+        :return: The 2end-order derivative of the spectral signatures.
+
+        Author: Huajian Liu
+        V0.0
+        Data: 6 June, 2022
+        """
+
+    import numpy as np
+
+    # If 1D, convert it to 2D
+    if spec_sig.shape.__len__() == 1:
+        spec_sig = spec_sig.reshape((1, spec_sig.shape[0]))
+
+    # First order derivative
+    fir_der = np.delete(spec_sig, obj=0, axis=1) - np.delete(spec_sig, obj=-1, axis=1)
+
+    # second order derivative
+    sec_der = np.delete(fir_der, obj=0, axis=1) - np.delete(fir_der, obj=-1, axis=1)
+
+    if flag_check:
+        from matplotlib import pyplot as plt
+
+        fig, ax = plt.subplots(1, 1)
+        if wave == []:
+            for i in range(0, sec_der.shape[0], check_interview):
+                ax.plot(sec_der[i])
+            ax.set_xlabel('band number', fontsize=12, fontweight='bold')
+        else:
+            for i in range(0, sec_der.shape[1], check_interview):
+                ax.plot(wave, sec_der)
+            ax.set_xlabel('Wavelength (nm)', fontsize=12, fontweight='bold')
+        ax.set_ylabel('2end der', fontsize=12, fontweight='bold')
+        ax.set_title('Second order derivative')
+
+    return sec_der
