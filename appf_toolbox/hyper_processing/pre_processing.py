@@ -207,7 +207,7 @@ def smooth_savgol_filter(x, window_length, polyorder, deriv=0, delta=1.0, axis=-
 ########################################################################################################################
 # rotate_hypercube()
 ########################################################################################################################
-def rotate_hypercube(hypercube, angle, scale=1, center='middle', flag_show_img=False, band_check=100):
+def rotate_hypercube(hypercube, angle, scale=1, center='middle', flag_show_img=False, band_check=0):
     """
     Rotate a hypercube.
 

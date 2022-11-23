@@ -1,4 +1,4 @@
-from sklearn.externals import joblib
+import joblib
 # import joblib
 import optunity.metrics
 import optunity
@@ -166,8 +166,6 @@ def plot_samples_with_colourbar(samples, labels, wavelengths, input_type='Input 
         plt.figure()
         plt.title(title)
         for i in range(samples.shape[0]):
-            print(samples[i])
-            print(wavelengths)
             plt.plot(wavelengths, samples[i], c=cmap.to_rgba(labels[i]), alpha=1)
         plt.colorbar(cmap,
                      ticks=np.linspace(np.round(labels.min(), decimals=3), np.round(labels.max(), decimals=3), 10))
@@ -243,8 +241,8 @@ def modelling_PLSRegression(max_n_components,
                             num_folds_outer_cv,
                             num_folds_inner_cv,
                             input_data_array,
-                            wavelengths,
                             labels,
+                            note='',
                             flag_save=False,
                             flag_fig=False,
                             id_cv=0):
@@ -255,8 +253,8 @@ def modelling_PLSRegression(max_n_components,
     :param num_folds_outer_cv:
     :param num_folds_inner_cv:
     :param input_data_array:
-    :param wavelengths: for the purpose of recored only
     :param labels: the values need to be predicted
+    :param note: some note for training the model.
     :param flag_save:
     :param flag_fig:
     :param id_cv: the id of cv to check
@@ -265,7 +263,8 @@ def modelling_PLSRegression(max_n_components,
     Author: Huajian Liu
     Email: huajian.liu@adelaide.edu.au
 
-    Version: v0 (10, Feb, 2019)
+    Version: v0.0 (10, Feb, 2019)
+             v0.1 (26, Aug, 2022) Input of "wavelength was removed"; Input of "note" was added.
     """
     start = datetime.datetime.now()
     print('')
@@ -278,9 +277,9 @@ def modelling_PLSRegression(max_n_components,
     save_record_name = 'record_plsr_' + date_time + '.sav'
     save_model_name = 'model_plsr' + date_time + '.sav'
 
-    ####################################################################################################################
+    ######################################################################
     # Outer CV function for computing mean square error compute_mse_pls()
-    ####################################################################################################################
+    ######################################################################
     print('Conducting outer cross-validation')
 
     # For record.
@@ -371,9 +370,9 @@ def modelling_PLSRegression(max_n_components,
                   'optimal_parameters_each_fold': params_each_fold,
                   'errors_each_fold': errors_each_fold,
                   'average_errors': ave_errors,
-                  'wavelengths': wavelengths,
                   'num_samples': input_data_array.shape[0],
-                  'tuned_model_finial': tuned_model_finial
+                  'tuned_model_final': tuned_model_finial,
+                  'note': note
                   }
 
     if flag_fig:
@@ -570,10 +569,280 @@ def modelling_svr_rbf(C_svr_rbf,
     if flag_save:
         joblib.dump(record_svr_rbf, save_record_name)
         joblib.dump(tuned_model_finial, save_model_name)
-        print('The tuned_model_finial and the record has been saved!')
+        print('The tuned_model_final and the record has been saved!')
 
     return record_svr_rbf, tuned_model_finial
     # SVM regression with rbf kernel
 ################################
 # SVM regression with rbf kernel
-########################################################################################################################
+###################################
+
+#####################
+# Make regression map
+#####################
+def make_regression_map(hyp_data,
+                        wavelength,
+                        green_seg_model_path,
+                        green_seg_model_name,
+                        regression_model_path,
+                        regression_model_name,
+                        val_min,
+                        val_max,
+                        band_r=97,
+                        band_g=52,
+                        band_b=14,
+                        gamma=0.7,
+                        roi =[],
+                        rotation = 0,
+                        flag_gaussian_filter=True,
+                        radius_dilation=3,
+                        sigma_gaussian=5,
+                        flag_figure=False,
+                        flag_remove_noise=True,
+                        flag_remove_border=False,
+                        selem_size=3):
+    """
+    Make a 2D regression map of a 3D hypercube based on trained crop segmentation model and regression model.
+    :param hyp_data: A calibrated 3D hypercube of row x col x dim. Float format in the range of [0, 1]
+    :param wavelength: The corresponding wavelengths of the hypercube.
+    :param green_seg_model_path: The path to save the crop segmentation model.
+    :param green_seg_model_name: The name of the crop segmentation model.
+    :param regression_model_path: The path of the regression model.
+    :param regression_model_name: The name of the regression model.
+    :param val_min: the minimum value of the regression results.
+    :param val_max: the maxum value of the regresson results.
+    :param band_r: The red band number to create a pseudo RGB image. Default is 97.
+    :param band_g: The green band number to create a pseudo RGB image. Default is 52.
+    :param band_b: The blue band number to create a pseddo RGB image. Default is 14.
+    :param gamma: The gamma value for exposure adjustment. Default is 0.7
+    :param roi: Region-of interest give as a dictionary {row_top, row_bottom, column_left, column_right}. Default is [].
+    :param rotation: Rotate the images. Default is 0 degree.
+    :param flag_gaussian_filter: The flage to apply Gaussian filter or not.
+    :param radius_dilation: The radius for object dilation.
+    :param sigma_gaussian: Sigma value for gaussian operation. Default is 5.
+    :param flag_figure: The flat to show the result or not.
+    :param flag_remove_noise: The flat to remove noise or not in the crop-segmented image.
+    :param flag_remove_border: For crop segmentation. The flag to remove the borders of the crops. The size of the
+           border is determined by selem_size. Default is False.
+    :param selem_size: For crop segmentation. If flag_remove_border set to True, erosion will be conducted using selem
+           np.ones((selem_size, selem_size)). Default is 3.
+    :return: A dictionary contain the results of crop segmentation and the map.
+
+    Version 1.0
+    Data: Aug 25 2022
+    Author: Huajian Liu
+    """
+
+    import sys
+    from pathlib import Path
+    sys.path.append(Path(__file__).parent.parent.parent)
+    from appf_toolbox.hyper_processing import transformation as tf
+    from appf_toolbox.hyper_processing import pre_processing as pp
+    from appf_toolbox.image_processing import gray_img_processing as gip
+    from matplotlib import pyplot as plt
+    import joblib as joblib
+    from sklearn.decomposition import PCA
+    import matplotlib as mpl
+    from skimage import filters
+
+    # -------------------
+    # Region of interest.
+    # -------------------
+    if roi == []:
+        pass
+    else:
+        hyp_data = hyp_data[roi['row_top']:roi['row_bottom'], roi['column_left']:roi['column_right']]
+
+    # ---------
+    # Rotation
+    # ---------
+    if rotation == 0:
+        pass
+    else:
+        hyp_data = pp.rotate_hypercube(hyp_data, rotation)
+
+    # ------------------
+    # Crop segmentation
+    # ------------------
+    print('Conducting crop segmentation......')
+    bw_crop, pseu_crop = pp.green_plant_segmentation(hyp_data,
+                                                     wavelength,
+                                                     green_seg_model_path,
+                                                     green_seg_model_name,
+                                                     band_R=band_r,
+                                                     band_G=band_g,
+                                                     band_B=band_b,
+                                                     gamma=gamma,
+                                                     flag_remove_noise=flag_remove_noise,
+                                                     flag_check=flag_figure)
+
+
+
+    # -----------
+    # Load regression mode
+    # ----------
+    print('Creating maps......')
+    regression_model = joblib.load(regression_model_path + '/' + regression_model_name)
+
+    # ------
+    # Smooth
+    # ------
+    (n_row, n_col, _) = hyp_data.shape
+    hyp_data = hyp_data.reshape(n_row * n_col, hyp_data.shape[2], order='c')
+    hyp_data = pp.smooth_savgol_filter(hyp_data,
+                                       window_length=regression_model['note']['smooth_window_length'],
+                                       polyorder=regression_model['note']['smooth_window_polyorder'])
+    hyp_data[hyp_data < 0] = 0
+
+    # Resampling
+    hyp_data = pp.spectral_resample(hyp_data, wavelength, regression_model['note']['wavelengths used in the model'])
+    n_band = hyp_data.shape[1]
+
+    # ----------------
+    # Transformation
+    # ----------------
+    if regression_model['note']['data_transformation'] == 'none':
+        print('Input data is reflectance.')
+        input = hyp_data
+    elif regression_model['note']['data_transformation'] == 'pca':
+        print('Input data is PCA n_pc = ' + str(regression_model['Note']['number_components_pca']))
+        pca = PCA(n_components=regression_model['Note']['number_components_pca'])
+        pcs = pca.fit_transform(hyp_data)
+        print('Explained variance: ')
+        print(pca.explained_variance_)
+        print('Explained variance ratio: ')
+        print(pca.explained_variance_ratio_)
+        print('Cumulative explained variance ratio: ')
+        print(pca.explained_variance_ratio_.cumsum())
+
+        input = pcs
+
+    elif regression_model['note']['data_transformation'] == 'hyp-hue' or \
+         regression_model['note']['data_transformation'] == 'hyper-hue' or \
+         regression_model['note']['data_transformation'] == 'hh':
+        print('Input data is hyp-hue')
+        hyp_data = hyp_data.reshape(n_row, n_col, n_band)
+        hyp_data, _, _ = tf.hc2hhsi(hyp_data)  # after this, hyp_data is hyp_hue (Inplace operation to save memory).
+        input = hyp_data.reshape(n_row * n_col, n_band - 1)
+
+    elif regression_model['note']['data_transformation'] == 'snv':
+        print('Input data is SNV')
+        input = tf.snv(hyp_data)
+
+    else:
+        print('Wrong transformation method!')
+
+    # -----------
+    # Make map
+    # ----------
+    # Predict
+    regression_map = regression_model['tuned_model_final'].predict(input)
+    regression_map = regression_map.reshape((n_row, n_col))
+    regression_map[regression_map < val_min] = val_min
+    regression_map[regression_map > val_max] = val_max
+
+    if flag_gaussian_filter:
+        # Dilation
+        regression_map = gip.obj_dilation_2d(bw_crop==1, regression_map, r=radius_dilation, flag_check=flag_figure)
+
+        # # Gaussian filter
+        regression_map = filters.gaussian(regression_map, sigma=sigma_gaussian, mode='nearest', cval=0)
+
+    # Set background to 0
+    regression_map[bw_crop == 0] = 0
+
+    # Convert regression map to rgb image with white background.
+    plt.imsave('regression_map_rgb.png', regression_map, cmap='jet', vmin=val_min, vmax=val_max)
+    regression_map_rgb = plt.imread('regression_map_rgb.png')
+
+    # Set the bk to white
+    regression_map_rgb[bw_crop == 0] = [1, 1, 1, 1]
+
+    # ---------------
+    # Show the result
+    # ---------------
+    if flag_figure:
+        # Show the pseudo RGB image of original data
+        wave_r = wavelength[band_r]
+        wave_g = wavelength[band_g]
+        wave_b = wavelength[band_b]
+        fig1, ax_fig1 = plt.subplots(1, 3)
+        ax_fig1[0].imshow(pseu_crop)
+        ax_fig1[0].set_title('Pseudo RGB R=' + str(wave_r) + ' G=' + str(wave_g) + ' B=' + str(wave_b))
+
+        # Show the regression map
+        ax_fig1[1].imshow(regression_map, cmap='jet', vmin=val_min, vmax=val_max)
+        ax_fig1[1].set_title('Regression map')
+        ax_fig1[2].imshow(regression_map_rgb)
+        ax_fig1[2].set_title('Regression map (RGB)')
+
+        # Make a colour bar
+        norm = mpl.colors.Normalize(vmin=val_min, vmax=val_max)
+        cmap = mpl.cm.ScalarMappable(norm=norm, cmap='jet')
+        cmap.set_array([])
+        fig1.colorbar(mappable=cmap, shrink=1)
+
+    return {'bw_crop': bw_crop,
+            'pseu_crop': pseu_crop,
+            'regression_map': regression_map,
+            'regression_map_rgb': regression_map_rgb
+            }
+
+
+#############################
+# Demo of make_regression map
+#############################
+if __name__ == "__main__":
+    import sys
+    import numpy as np
+    sys.path.append('E:/python_projects/appf_toolbox_project')
+    from appf_toolbox.hyper_processing import envi_funs
+
+    # Input parameters
+    data_path = 'E:\Data\wheat_n_0493\wiw_20191017'
+    data_name = 'vnir_74_104_6125_2019-10-17_00-44-10'
+
+    seg_model_path = 'E:/python_projects/p12_green_segmentation/green_seg_model_20220201/wiwam_py3.9'
+    seg_model_name = 'record_OneClassSVM_vnir_hh_py3.9_sk1.0.2.sav'
+
+    regression_model_path = 'E:/python_projects/wheat_n_0493/models'
+    regression_model_name = 'record_plsr_22-09-09-19-38-21_vnir_hyper-hue_py3.9.sav'
+
+    val_min = 1
+    val_max = 7
+    roi = {'row_top': 100,  'row_bottom': 400, 'column_left': 150, 'column_right': 350}
+    rotation = 180
+
+    # Read the data
+    raw_data, meta_plant = envi_funs.read_hyper_data(data_path, data_name)
+
+    wavelengths = np.zeros((meta_plant.metadata['Wavelength'].__len__(),))
+    for i in range(wavelengths.size):
+        wavelengths[i] = float(meta_plant.metadata['Wavelength'][i])
+
+    # Calibrate the data
+    hypcube = envi_funs.calibrate_hyper_data(raw_data['white'], raw_data['dark'], raw_data['plant'],
+                                             trim_rate_t_w=0.1, trim_rate_b_w=0.95)
+
+    map = make_regression_map(hypcube,
+                            wavelengths,
+                            seg_model_path,
+                            seg_model_name,
+                            regression_model_path,
+                            regression_model_name,
+                            val_min,
+                            val_max,
+                            band_r=97,
+                            band_g=52,
+                            band_b=14,
+                            gamma=0.7,
+                            roi = roi,
+                            rotation=rotation,
+                            flag_gaussian_filter=True,
+                            radius_dilation=3,
+                            sigma_gaussian=3,
+                            flag_figure=True,
+                            flag_remove_noise=True,
+                            flag_remove_border=False,
+                            selem_size=3)
+

@@ -326,7 +326,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
             # metrics_val = calculate_bi_classification_metrics(label[val_index], output_val)
             # metrics_tra = calculate_bi_classification_metrics(label[train_ind], output_tra)
 
-            # Classification report for binary of multiple classes.
+            # Classification report for binary or multiple classes.
             report_tra = met.classification_report(label[train_ind], output_tra, output_dict=True)
             report_val = met.classification_report(label[val_index], output_val, output_dict=True)
 
