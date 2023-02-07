@@ -6,13 +6,13 @@ import pandas as pd
 from os import walk
 
 import sys
-sys.path.append('../appf_toolbox')
+sys.path.append('E:/python_projects/appf_toolbox_project')
 from appf_toolbox.wiwam import wiwam_tools as wt
 
 ########################################################################################################################
 # Parameters
 ########################################################################################################################
-hyp_data_path = 'E:/Data/0614_ruby'
+hyp_data_path = 'C:/Users/Huajian/OneDrive - University of Adelaide/appf_toolbox_demo_data'
 
 barcode_hypname_path = 'C:/Users/Huajian/OneDrive/OD_projects_doc/Rubby_0614'
 barcode_hypname_file = 'barcode_hypname.xlsx'

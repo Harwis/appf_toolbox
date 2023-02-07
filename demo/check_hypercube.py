@@ -7,8 +7,8 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = 'E:/Data/ruby_0614'
-folder_name = 'vnir_103_143_9670_2022-04-13_22-52-10'
+folder_path = 'C:/Users/Huajian/OneDrive - University of Adelaide/appf_toolbox_demo_data'
+folder_name = 'vnir_74_104_6235_2019-10-18_01-47-33'
 
 
 # Will read the wavelength on every band_interval
