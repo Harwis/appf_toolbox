@@ -1,3 +1,11 @@
-Demo data is availabe from: https://1drv.ms/u/s!Al83ZBJUQ8sannaFwKzQA82N9zWn?e=tG2BY8
+Install appf_toobox
+1. Clone the appf_toobox scripts to your PC 
+   git clone git@github.com:Harwis/appf_toolbox.git
+2. Create a conda environment using the appf_toolbox_env.yml file. 
+   conda env create --name "appf_toolbox_env" -f appf_toolbox_env.yml
+3. Activate the environment
+   conda activate appf_toolbox_env
+   
+ Done!
 
 
