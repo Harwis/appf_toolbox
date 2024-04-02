@@ -207,7 +207,7 @@ def smooth_savgol_filter(x, window_length, polyorder, deriv=0, delta=1.0, axis=-
 ########################################################################################################################
 # rotate_hypercube()
 ########################################################################################################################
-def rotate_hypercube(hypercube, angle, scale=1, center='middle', flag_show_img=False, band_check=0):
+def rotate_hypercube(hypercube, angle=0, scale=1, center='middle', flag_show_img=False, band_check=0):
     """
     Rotate a hypercube.
 
@@ -223,8 +223,8 @@ def rotate_hypercube(hypercube, angle, scale=1, center='middle', flag_show_img=F
 
     Version: v0 (Nov 25, 2019)
     """
-    from matplotlib import pyplot as plt
-    import cv2
+
+
 
     cols = hypercube.shape[1]
     rows = hypercube.shape[0]
@@ -237,12 +237,17 @@ def rotate_hypercube(hypercube, angle, scale=1, center='middle', flag_show_img=F
         pass
 
     # Rotation matrix
-    rotation_matrix = cv2.getRotationMatrix2D(center, angle, scale)
+    if angle != 0:
+        import cv2
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, scale)
 
-    # warp the image
-    dst = cv2.warpAffine(hypercube, rotation_matrix, (cols, rows))
+        # warp the image
+        dst = cv2.warpAffine(hypercube, rotation_matrix, (cols, rows))
+    else:
+        dst = hypercube
 
     if flag_show_img:
+        from matplotlib import pyplot as plt
         fig = plt.figure()
         ax1 = fig.add_subplot(1,2,1)
         ax1.imshow(hypercube[:, :, band_check], cmap='gray')
@@ -669,20 +674,19 @@ def statistics_under_mask(data,
         ave_ref = np.mean(data, axis=0)
         std_ref = np.std(data, axis=0)
 
+        if flag_check:
+            for ref_ind in range(0, data.shape[0], int(data.shape[0]/10)):
+                af1[2].plot(data[ref_ind], linestyle='dashed')
+            af1[2].set_ylabel('Reflectance', fontsize=12, fontweight='bold')
+            af1[2].set_title('Reflectance after smoothing.')
+            af1[2].plot(ave_ref, color='red', linestyle='-', label='Average of ref')
+            af1[2].plot(std_ref, color='red', linestyle='-.', label='STD of ref')
+            plt.legend()
+            plt.show()
+
     stat = {'ave_ref': ave_ref,
             'std_ref': std_ref,
             'n_pixel': np.sum(mask)}
-
-    if flag_check:
-        for ref_ind in range(0, data.shape[0], int(data.shape[0]/10)):
-            af1[2].plot(data[ref_ind], linestyle='dashed')
-        af1[2].set_ylabel('Reflectance', fontsize=12, fontweight='bold')
-        af1[2].set_title('Reflectance after smoothing.')
-        af1[2].plot(ave_ref, color='red', linestyle='-', label='Average of ref')
-        af1[2].plot(std_ref, color='red', linestyle='-.', label='STD of ref')
-        plt.legend()
-        plt.show()
-
 
     return stat
 
@@ -781,5 +785,3 @@ if __name__ == '__main__':
     ref_n = joblib.load(data_path + '/' + data_name)
     ref = ref_n['ref']
     data_sm = smooth_savgol_filter_f(ref, window_length, polyorder, flag_fig=True, id_x=id_data)
-
-

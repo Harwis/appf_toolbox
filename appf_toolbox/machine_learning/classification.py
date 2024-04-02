@@ -202,11 +202,11 @@ def average_classification_metrics(record_cv):
     # Average confusion matrix
     ave_con_mat_tra = np.asarray(ave_con_mat_tra)
     ave_con_mat_tra = np.mean(ave_con_mat_tra, axis=0)
-    ave_con_mat_tra = np.round(ave_con_mat_tra).astype(np.int)
+    ave_con_mat_tra = np.round(ave_con_mat_tra).astype(int)
 
     ave_con_mat_val = np.asarray(ave_con_mat_val)
     ave_con_mat_val = np.mean(ave_con_mat_val, axis=0)
-    ave_con_mat_val = np.round(ave_con_mat_val).astype(np.int)
+    ave_con_mat_val = np.round(ave_con_mat_val).astype(int)
 
     # Average accuracy
     ave_accuracy_tra = np.asarray(ave_accuracy_tra)
@@ -402,6 +402,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     if flag_save:
         file_name_prefix = file_name_prefix + '_' + datetime.now().strftime('%y-%m-%d-%H-%M-%S') + '.sav'
         joblib.dump(record, file_name_prefix)
+        print('CV record saved at ' + file_name_prefix)
 
     return record
 
@@ -426,9 +427,9 @@ def tune_svm_classification(input,
     :param opt_num_iter_cv: The number of iteration of cross validation of optunity.
     :param opt_num_fold_cv: The number of fold of cross validation of optunity.
     :param opt_num_evals: The number of evaluation of optunity.
-    :return: A tuned SVM model for binary classification.
+    :return: A tuned SVM model for classification.
 
-    Author: Huajina Liu email: huajina.liu@adelaide.edu.au
+    Author: Huajian Liu email: huajian.liu@adelaide.edu.au
     Version: 1.0 Date: August 20, 2021
     """
     from sklearn.svm import SVC
@@ -445,8 +446,96 @@ def tune_svm_classification(input,
     optimal_pars, _, _ = optunity.minimize(tune_cv, num_evals=opt_num_evals, C=svm_c_range, gamma=svm_gamma_range)
 
     # Train a model using the optimal parameters
-    tuned_model = SVC(**optimal_pars).fit(input, label)
+    tuned_model = SVC(kernel=svm_kernel, **optimal_pars, tol=svm_tol).fit(input, label)
     return tuned_model
+
+
+def tune_nn_classification(input,
+                           label,
+                           nn_hidden_layer_size,
+                           nn_solver,
+                           nn_alpha_range,
+                           nn_max_iter=200,
+                           nn_random_state=1,
+                           opt_num_iter_cv=5,
+                           opt_num_fold_cv=5,
+                           opt_num_evals=5):
+    """
+    Tune a nn classification model based on sklearn.neural_network
+    :param input: The input data for training the model. 2D numpy array
+    :param label: The ground-trued labels for training the model. 1D numpy array in int.
+    :param opt_num_iter_cv: The number of iteration of cross validation of optunity.
+    :param opt_num_fold_cv: The number of fold of cross validation of optunity.
+    :param opt_num_evals: The number of evaluation of optunity.
+    :return: A tuned nn model for classification.
+
+    Author: Huajian Liu email: huajian.liu@adelaide.edu.au
+    Version: 1.0 Date: March 6, 2024
+    """
+    from sklearn.neural_network import MLPClassifier
+    import optunity.metrics
+
+    # Search the optimal parameters
+    @optunity.cross_validated(x=input, y=label, num_iter=opt_num_iter_cv, num_folds=opt_num_fold_cv)
+    def tune_cv(x_train, y_train, x_test, y_test, alpha):
+        model = MLPClassifier(solver=nn_solver, hidden_layer_sizes=nn_hidden_layer_size, max_iter=nn_max_iter, random_state=nn_random_state,
+                              alpha=alpha) # need to be tuned
+        model.fit(x_train, y_train)
+        predictions = model.predict(x_test)
+        return optunity.metrics.error_rate(y_test, predictions) # error_rate = 1.0 - accuracy(y, yhat)
+
+    optimal_pars, _, _ = optunity.minimize(tune_cv, num_evals=opt_num_evals, alpha=nn_alpha_range)
+
+    # Train a model using the optimal parameters
+    tuned_model = MLPClassifier(solver=nn_solver, hidden_layer_sizes=nn_hidden_layer_size, random_state=nn_random_state,
+                                **optimal_pars).fit(input, label).fit(input, label)
+    return tuned_model
+
+
+def tune_rf_classification(input,
+                           label,
+                           rf_max_depth=2,
+                           rf_random_state=1,
+                           # opt_num_iter_cv=5,
+                           # opt_num_fold_cv=5,
+                           # opt_num_evals=5
+                           ):
+    """
+    Tune a random forest classification model based on sklearn.neural_network
+    :param input: The input data for training the model. 2D numpy array
+    :param label: The ground-trued labels for training the model. 1D numpy array in int.
+    :param opt_num_iter_cv: The number of iteration of cross validation of optunity.
+    :param opt_num_fold_cv: The number of fold of cross validation of optunity.
+    :param opt_num_evals: The number of evaluation of optunity.
+    :return: A tuned nn model for classification.
+
+    Author: Huajian Liu email: huajian.liu@adelaide.edu.au
+    Version: 1.0 Date: March 7, 2024
+    """
+    from sklearn.ensemble import RandomForestClassifier
+
+    # No parameters to tune at the moment.
+    # import optunity.metrics
+    #
+    # # Search the optimal parameters
+    # @optunity.cross_validated(x=input, y=label, num_iter=opt_num_iter_cv, num_folds=opt_num_fold_cv)
+    # def tune_cv(x_train, y_train, x_test, y_test):
+    #     model = RandomForestClassifier(max_depth=rf_max_depth, random_state=rf_random_state)
+    #     model.fit(x_train, y_train)
+    #     predictions = model.predict(x_test)
+    #     return optunity.metrics.error_rate(y_test, predictions) # error_rate = 1.0 - accuracy(y, yhat)
+    #
+    # optimal_pars, _, _ = optunity.minimize(tune_cv, num_evals=opt_num_evals)
+
+    # Train a model using the optimal parameters
+    tuned_model = RandomForestClassifier(max_depth=rf_max_depth, random_state=rf_random_state).fit(input, label)
+    return tuned_model
+
+
+
+
+
+
 
 
 def make_class_map(hyp_data,

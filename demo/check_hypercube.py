@@ -7,8 +7,8 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = 'C:/Users/Huajian/OneDrive - University of Adelaide/appf_toolbox_demo_data'
-folder_name = 'vnir_74_104_6235_2019-10-18_01-47-33'
+folder_path = '/media/huajian/TOSHIBA EXT/project 2022/cr_gta_0644/cr_gta_0644_hypimg'
+folder_name = 'swir_108_152_9748_2022-11-17_04-20-49'
 
 
 # Will read the wavelength on every band_interval

@@ -694,7 +694,9 @@ def make_regression_map(hyp_data,
                                        polyorder=regression_model['note']['smooth_window_polyorder'])
     hyp_data[hyp_data < 0] = 0
 
+    # ----------
     # Resampling
+    # ----------
     hyp_data = pp.spectral_resample(hyp_data, wavelength, regression_model['note']['wavelengths used in the model'])
     n_band = hyp_data.shape[1]
 

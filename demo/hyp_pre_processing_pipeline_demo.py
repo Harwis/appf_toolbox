@@ -8,7 +8,7 @@ from appf_toolbox.hyper_processing import pre_processing as pp
 ########################################################################################################################
 # Parameters
 ########################################################################################################################
-data_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
+data_path = 'E:/python_projects/appf_toolbox_demo_data'
 data_name = 'vnir_74_104_6235_2019-10-18_01-47-33'
 band_num_check = 100
 pix_check = [255, 206] # (col, row)

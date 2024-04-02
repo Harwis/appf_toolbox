@@ -1,34 +1,26 @@
 import sys
-sys.path.append('E:/python_projects/appf_toolbox_project')
+sys.path.append('/media/huajian/Files/python_projects/appf_toolbox_project')
 import numpy as np
 # from matplotlib import pyplot as plt
 from appf_toolbox.hyper_processing import envi_funs
 from appf_toolbox.hyper_processing import pre_processing as pp
-from matplotlib import pyplot as plt
 
 
 ########################################################################################################################
 # Parameters
 ########################################################################################################################
-data_path = 'C:/Users/Huajian/OneDrive - University of Adelaide/appf_toolbox_demo_data'
-model_path = 'E:/ATP_hypimg_demo/green_crop_segmentation_models'
-
-# data_name = 'vnir_74_104_6235_2019-10-18_01-47-33'
-# model_name = 'record_OneClassSVM_vnir_hh_py3.9_sk1.0.2.sav'
-
-data_name = 'swir_74_104_6235_2019-10-18_01-47-33'
-model_name = 'record_OneClassSVM_swir_hh_py3.9_sk1.0.2.sav'
-
-band_num_check = 10 # 300 # vnir
-pix_check = [186, 183] # [252, 210] # (col, row) vnir
+data_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
+data_name = 'vnir_74_104_6235_2019-10-18_01-47-33'
+band_num_check = 100
+pix_check = [255, 206] # (col, row)
 
 # For smooth filter
 # wl = 21 # windows length
 # po = 3 # Polyorder
 
-# model_name = 'record_OneClassSVM_vnir_hh_py3.9_sk1.0.2.sav'
-
-
+model_name_vnir = 'green_crop_seg_model_OneClassSVM_vnir.npy'
+# model_name_swir = 'green_crop_seg_model_OneClassSVM_swir.npy'
+model_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data/green_seg_model_20210129'
 
 ########################################################################################################################
 # Read the data
@@ -52,18 +44,4 @@ hypcube = envi_funs.calibrate_hyper_data(raw_data['white'], raw_data['dark'], ra
 ########################################################################################################################
 # Segmentation
 ########################################################################################################################
-bw, pseu = pp.green_plant_segmentation(hypcube, wavelengths, model_path, model_name, flag_check=True)
-
-
-########
-# Check
-########
-fig, ax = plt.subplots(1, 2)
-fig.suptitle(data_name)
-ax[0].imshow(hypcube[:, :, band_num_check], cmap='gray')
-ax[0].scatter(pix_check[0], pix_check[1], marker='+', color=[1, 0, 0])
-ax[0].set_title('Band ' + str(band_num_check) + '@' + str(wavelengths[band_num_check]) + ' nm')
-ax[1].plot(wavelengths, hypcube[pix_check[0], pix_check[1], :])
-ax[1].set_xlabel('Wavelengths (nm)')
-ax[1].set_ylabel('Reflectance')
-plt.show()
+bw, pseu = pp.green_plant_segmentation(hypcube, wavelengths, model_path, model_name_vnir, flag_check=True)

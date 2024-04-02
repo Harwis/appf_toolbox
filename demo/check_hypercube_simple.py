@@ -4,7 +4,7 @@ from spectral import *
 from matplotlib import pyplot as plt
 
 # Parameters
-path = '/media/huajian/Files/Data/test_shutter/20210531'
+path = 'E:/Data/test_shutter/20210531'
 folder_name = 'vnir_nil_2021-05-31_00-50-20'
 hdr_name = 'DARKREF_vnir_nil_2021-05-31_00-50-20.hdr'
 raw_name = 'DARKREF_vnir_nil_2021-05-31_00-50-20.raw'

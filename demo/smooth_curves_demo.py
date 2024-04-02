@@ -1,12 +1,12 @@
 from scipy import signal
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.externals import joblib
+import joblib
 from appf_toolbox.hyper_processing import pre_processing as pp
 
 
 # Parameters
-data_path = '../appf_toolbox_demo_data'
+data_path = 'E:/python_projects/appf_toolbox_demo_data'
 data_name = 'grass_vnir_n.sav'
 data_id = 10
 window_length = 11

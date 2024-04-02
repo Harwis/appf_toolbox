@@ -26,15 +26,15 @@ def obj_dilation_2d(mask, img, r=3, flag_check=False):
         for col in range(ncols):
 
             if np.all(
-                    mask[row - r:row + r + 1, col - r:col + r + 1] == False):  # If the window on the background
+                    mask[row - r:row + r + 1, col - r:col + r + 1] == False):  # If the window in the background
                 pass
             elif row - r < 0 or row + r > (nrows - 1) or col - r < 0 or col + r > (
                     ncols - 1):  # If this window is out of the image
                 pass
             elif np.all(
-                    mask[row - r:row + r + 1, col - r:col + r + 1] == True):  # If the winddow are on the objects
+                    mask[row - r:row + r + 1, col - r:col + r + 1] == True):  # If the window is in the objects
                 pass
-            elif mask[row, col] == False:  # The window covers the object and background and the pixel is background
+            elif mask[row, col] == False:  # The window covers the object and background and the pixels belong to the background
                 # The indices of objects in the window
                 ind_obj_local = np.where(mask[row - r:row + r + 1, col - r:col + r + 1] == True)
                 row_obj_global = ind_obj_local[0] + row - r

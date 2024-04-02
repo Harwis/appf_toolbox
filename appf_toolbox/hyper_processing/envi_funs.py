@@ -77,7 +77,7 @@ def envi_hyp_img_pre_processing_pipeline(data_path, data_name, wavelength_low, w
                                  pix_check, band_num_check, window_length, polyorder, angle_rotation=0, flag_fig=False):
     """
     Conduct a pre-processing pipeline for envi hyperspectral images, including 1.reading an envi image, 2.calibrating the
-    image, 3. rotate the image if necessary, smoothing and removing noisy bands.
+    image, 3. rotate the image if necessary, 4. smoothing and 5. removing noisy bands.
     :param data_path: The path of the envi image.
     :param data_name: The name of the envi image.
     :param wavelength_low: The low-end of noisy wavelength.
