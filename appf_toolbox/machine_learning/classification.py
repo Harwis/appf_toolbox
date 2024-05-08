@@ -288,6 +288,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     import joblib
     from datetime import datetime
     import sklearn.metrics as met
+    import os
 
     # Performing repeated cross validation
     # First, calculate the number of samples of each class; total samples
@@ -310,6 +311,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
         classes_val, counts_val = np.unique(label[val_index], return_counts=True)
         classes_tra, counts_tra = np.unique(label[train_ind], return_counts=True)
 
+
         # The classes of training or validation should be the same of the total classes
         if classes_tra.shape[0] != classes.shape[0]:
             print('The classes of training is ', classes_tra)
@@ -322,13 +324,24 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
             output_tra = tuned_model.predict(input[train_ind])
             output_val = tuned_model.predict(input[val_index])
 
-            # Classification metrics
+
+            # Degug
+            # print('Label of validation set:')
+            # print(label[val_index])
+            # print('Output of valdiation set:')
+            # print(output_val)
+
+
+            # Classification metrics (old, not used anymore)
             # metrics_val = calculate_bi_classification_metrics(label[val_index], output_val)
             # metrics_tra = calculate_bi_classification_metrics(label[train_ind], output_tra)
 
             # Classification report for binary or multiple classes.
-            report_tra = met.classification_report(label[train_ind], output_tra, output_dict=True)
-            report_val = met.classification_report(label[val_index], output_val, output_dict=True)
+            # zero_division {“warn”, 0.0, 1.0, np.nan}, default =”warn”
+            # Sets the value to return when there is a zero division.If set to “warn”, this acts as 0, but warnings
+            # are also raised.
+            report_tra = met.classification_report(label[train_ind], output_tra, output_dict=True, zero_division=0)
+            report_val = met.classification_report(label[val_index], output_val, output_dict=True, zero_division=0)
 
             # Confusion matrix
             conf_max_tra = met.confusion_matrix(label[train_ind], output_tra)
@@ -383,15 +396,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
 
     # Record
     record = {'record of each cv': record_each_cv,
-# <<<<<<< HEAD
-#               'average confusion matrix': ave_con_mat,
-#               'average recall': ave_recall,
-#               'average f1': ave_f1,
-#               'average accuracy': ave_asccuracy,
-#               'average precision': ave_precision,
-# =======
               'average metrics': ave_metrics,
-# >>>>>>> c2a56474bae101bc14180e6b2aa619d5aeda3d21
               'total samples': total_samples,
               'classes': str(classes),
               'count in each class': str(counts),
@@ -402,7 +407,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     if flag_save:
         file_name_prefix = file_name_prefix + '_' + datetime.now().strftime('%y-%m-%d-%H-%M-%S') + '.sav'
         joblib.dump(record, file_name_prefix)
-        print('CV record saved at ' + file_name_prefix)
+        print('CV record saved at ' +  os.getcwd() + '/' + file_name_prefix)
 
     return record
 
