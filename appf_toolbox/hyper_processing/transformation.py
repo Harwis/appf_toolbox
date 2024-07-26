@@ -108,7 +108,7 @@ def snv(ref, flag_fig=False):
     std_ref = np.tile(std_ref, (1, ref.shape[1]))
 
     # snv
-    snv = (ref - mean_ref) / std_ref
+    snv = (ref - mean_ref) / (std_ref + 1e-10)
 
     if flag_fig:
         f = plt.figure()

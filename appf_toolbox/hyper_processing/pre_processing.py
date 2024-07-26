@@ -475,6 +475,9 @@ def green_plant_segmentation_batch(hyp_data_path,
                                    function=None):
     """
     Conduct green plant segmentaion for the WIWAM hyprspectral data uisng pre-trained models.
+    Work for vnir, swir or mixed data.
+    It returns zeros for fake plants or empty pots.
+
     :param hyp_data_path: Path of WIWAN hyperspectral data.
     :param model_name_vnir: Crop segmentation model for VNIR data
     :param model_name_swir: Crop segmentation model for SWIR data

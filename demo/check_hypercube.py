@@ -1,14 +1,24 @@
 # This demo shows how to read and calibrate the hyperspectral data in envi format.
 import sys
-sys.path.append('E:/python_projects/appf_toolbox_project')
+sys.path.append('/media/huajian/New Volume/python_projects/appf_toolbox')
 from appf_toolbox.hyper_processing import envi_funs
 from matplotlib import pyplot as plt
 import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = '/media/huajian/TOSHIBA EXT/project 2022/cr_gta_0644/cr_gta_0644_hypimg'
-folder_name = 'swir_108_152_9748_2022-11-17_04-20-49'
+folder_path = '/media/huajian/New Volume/Data/0757 Yiting flowering time/20240711'
+# folder_name = 'vnir_116_158_10108_2024-07-10_02-26-20'
+# folder_name = 'vnir_116_158_10109_2024-07-10_02-27-53'
+# folder_name = 'vnir_116_158_10111_2024-07-10_01-00-30'
+# folder_name = 'vnir_116_158_10112_2024-07-10_01-02-02'
+# folder_name = 'vnir_116_158_10113_2024-07-10_01-03-35'
+# folder_name = 'vnir_116_158_10227_2024-07-10_00-55-23'
+# folder_name = 'vnir_116_158_10228_2024-07-10_00-53-56' # (fake plant, error)
+folder_name = 'vnir_117_159_10230_2024-07-10_02-24-20'
+# folder_name = 'vnir_116_158_10219_2024-07-09_06-00-06' # (fake error)
+# folder_name = 'vnir_116_158_10228_2024-07-09_05-57-49' # (fake error)
+
 
 
 # Will read the wavelength on every band_interval
