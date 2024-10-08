@@ -7,18 +7,8 @@ import numpy as np
 
 ########################################################################################################################
 # Parameters
-folder_path = '/media/huajian/New Volume/Data/0757 Yiting flowering time/20240711'
-# folder_name = 'vnir_116_158_10108_2024-07-10_02-26-20'
-# folder_name = 'vnir_116_158_10109_2024-07-10_02-27-53'
-# folder_name = 'vnir_116_158_10111_2024-07-10_01-00-30'
-# folder_name = 'vnir_116_158_10112_2024-07-10_01-02-02'
-# folder_name = 'vnir_116_158_10113_2024-07-10_01-03-35'
-# folder_name = 'vnir_116_158_10227_2024-07-10_00-55-23'
-# folder_name = 'vnir_116_158_10228_2024-07-10_00-53-56' # (fake plant, error)
-folder_name = 'vnir_117_159_10230_2024-07-10_02-24-20'
-# folder_name = 'vnir_116_158_10219_2024-07-09_06-00-06' # (fake error)
-# folder_name = 'vnir_116_158_10228_2024-07-09_05-57-49' # (fake error)
-
+folder_path = '/media/huajian/New Volume/Data/0757 Yiting flowering time/wiwam_manual'
+folder_name = 'vnir_120_162_10336_2024-09-20_07-24-47'
 
 
 # Will read the wavelength on every band_interval

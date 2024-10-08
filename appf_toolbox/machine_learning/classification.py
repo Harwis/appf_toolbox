@@ -289,6 +289,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     from datetime import datetime
     import sklearn.metrics as met
     import os
+    import pandas as pd
 
     # Performing repeated cross validation
     # First, calculate the number of samples of each class; total samples
@@ -300,7 +301,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     count_cv = 1
     for train_ind, val_index in rkf.split(input):
         print('')
-        print('========== cross validation ' + str(count_cv) + '==========')
+        print('========== cross validation ' + str(count_cv) + ' ==========')
 
         # Train
         tuned_model = tune_model(input[train_ind], label[train_ind], **karg)
@@ -340,6 +341,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
             # zero_division {“warn”, 0.0, 1.0, np.nan}, default =”warn”
             # Sets the value to return when there is a zero division.If set to “warn”, this acts as 0, but warnings
             # are also raised.
+            # Output dict for the average_metrics function
             report_tra = met.classification_report(label[train_ind], output_tra, output_dict=True, zero_division=0)
             report_val = met.classification_report(label[val_index], output_val, output_dict=True, zero_division=0)
 
@@ -347,30 +349,36 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
             conf_max_tra = met.confusion_matrix(label[train_ind], output_tra)
             conf_max_val = met.confusion_matrix(label[val_index], output_val)
 
-            print('-----------------')
-            print('Train')
-            print('-----------------')
+            print('')
+            print('--- Train ---')
             print('Classes', classes_tra)
             print('Count of each class:')
             print(counts_tra)
-            print(report_tra)
+            print('Confusion matrix:')
+            print(conf_max_tra)
+            print('Metrics')
+            print(met.classification_report(label[train_ind], output_tra, zero_division=0))
 
-            print('-----------------')
-            print('Validation')
-            print('-----------------')
+            print('')
+            print('--- Validation ---')
             print('Classes', classes_val)
             print('Count of each class:')
             print(counts_val)
-            print(report_val)
+            print('Confusion matrix:')
+            print(conf_max_val)
+            print(met.classification_report(label[val_index], output_val, zero_division=0))
 
             # Record
-            record_each_cv.append({'Classification report of validation': report_val,
-                                   'Count of validation': counts_val,
-                                   'Classification report of train': report_tra,
-                                   'Count of train': counts_val,
+            record_each_cv.append({'Classification report of train': report_tra,
+                                   'Count of train': counts_tra,
+                                   'Classes train': classes_tra,
                                    'Confusion matrix of train': conf_max_tra,
+
+                                   'Classification report of validation': report_val,
+                                   'Count of validation': counts_val,
+                                   'Classes validation': classes_val,
                                    'Confusion matrix of validation': conf_max_val,
-                                   'Classes': classes_tra})
+                                   })
             count_cv += 1
 
     if record_each_cv.__len__() == 0:
@@ -382,14 +390,31 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
 
     # Print the summary of cross-validation
     print()
+    print('====================================================')
     print('Summary of ' + str(n_splits) + '-fold cross validation with ' + str(n_repeats) + ' repeats')
+    print('====================================================')
     print('Total samples: ', total_samples)
     print('Classes:', classes)
     print('Count in each class: ', counts)
-    print('Average metrics of train: ')
-    print(ave_metrics['ave_metrics_train'])
-    print('Average metrics of validation: ')
-    print(ave_metrics['ave_metrics_validation'])
+    print('')
+
+    # print('--- Training ---')
+    # print('Confusion matrix:')
+    # print(ave_metrics['ave_metrics_train']['conf_mat'])
+    # print('Accuracy: ', ave_metrics['ave_metrics_train']['accuracy'])
+    # print('Recall: ', ave_metrics['ave_metrics_train']['recall'])
+    # print('Precision: ', ave_metrics['ave_metrics_train']['precision'])
+    # print('F1: ', ave_metrics['ave_metrics_train']['f1'])
+    # print('')
+    print(pd.DataFrame(ave_metrics))
+
+    # print('--- Validation ---')
+    # print('Confusion matrix:')
+    # print(ave_metrics['ave_metrics_validation']['conf_mat'])
+    # print('Accuracy: ', ave_metrics['ave_metrics_validation']['accuracy'])
+    # print('Recall: ', ave_metrics['ave_metrics_validation']['recall'])
+    # print('Precision: ', ave_metrics['ave_metrics_validation']['precision'])
+    # print('F1: ', ave_metrics['ave_metrics_validation']['f1'])
 
     # Train a final model using all of the data
     final_model = tune_model(input, label, **karg)
@@ -501,42 +526,42 @@ def tune_rf_classification(input,
                            label,
                            rf_max_depth=2,
                            rf_random_state=1,
-                           # opt_num_iter_cv=5,
-                           # opt_num_fold_cv=5,
-                           # opt_num_evals=5
                            ):
     """
     Tune a random forest classification model based on sklearn.neural_network
     :param input: The input data for training the model. 2D numpy array
     :param label: The ground-trued labels for training the model. 1D numpy array in int.
-    :param opt_num_iter_cv: The number of iteration of cross validation of optunity.
-    :param opt_num_fold_cv: The number of fold of cross validation of optunity.
-    :param opt_num_evals: The number of evaluation of optunity.
-    :return: A tuned nn model for classification.
+    :return: A tuned rf model for classification.
 
     Author: Huajian Liu email: huajian.liu@adelaide.edu.au
     Version: 1.0 Date: March 7, 2024
     """
     from sklearn.ensemble import RandomForestClassifier
 
-    # No parameters to tune at the moment.
-    # import optunity.metrics
-    #
-    # # Search the optimal parameters
-    # @optunity.cross_validated(x=input, y=label, num_iter=opt_num_iter_cv, num_folds=opt_num_fold_cv)
-    # def tune_cv(x_train, y_train, x_test, y_test):
-    #     model = RandomForestClassifier(max_depth=rf_max_depth, random_state=rf_random_state)
-    #     model.fit(x_train, y_train)
-    #     predictions = model.predict(x_test)
-    #     return optunity.metrics.error_rate(y_test, predictions) # error_rate = 1.0 - accuracy(y, yhat)
-    #
-    # optimal_pars, _, _ = optunity.minimize(tune_cv, num_evals=opt_num_evals)
-
     # Train a model using the optimal parameters
     tuned_model = RandomForestClassifier(max_depth=rf_max_depth, random_state=rf_random_state).fit(input, label)
     return tuned_model
 
 
+def tune_gaussianNB_classification(input,
+                              label,
+                              ):
+    """
+    Tune a Naive Bayes Classifier. As Naive Bayes classifier does not need to tune any parameter, we do nothing here,
+    just keeping a standard format as other classifiers.
+
+    :param input: The input data for training the model. 2D numpy array
+    :param label: The ground-trued labels for training the model. 1D numpy array in int.
+    :return: A tuned model for classification.
+
+    Author: Huajian Liu email: huajian.liu@adelaide.edu.au
+    Version: 1.0 Date: Aug 21, 2024
+    """
+    from sklearn.naive_bayes import GaussianNB 
+
+    # Train a model using the optimal parameters
+    tuned_model = GaussianNB().fit(input, label)
+    return tuned_model
 
 
 
