@@ -5,6 +5,7 @@ dependencies:
   - _anaconda_depends=2023.09=py311_mkl_1
   - _libgcc_mutex=0.1=main
   - _openmp_mutex=5.1=1_gnu
+  - _py-xgboost-mutex=2.0=cpu_2
   - abseil-cpp=20211102.0=hd4dd3e8_0
   - affine=2.3.0=pyhd3eb1b0_0
   - aiobotocore=2.5.0=py311h06a4308_0
@@ -63,9 +64,9 @@ dependencies:
   - bzip2=1.0.8=h7b6447c_0
   - c-ares=1.19.1=h5eee18b_0
   - c-blosc2=2.8.0=h6a678d5_0
-  - ca-certificates=2024.7.2=h06a4308_0
+  - ca-certificates=2025.2.25=h06a4308_0
   - cairo=1.16.0=hb05425b_5
-  - certifi=2024.7.4=py311h06a4308_0
+  - certifi=2025.6.15=py311h06a4308_0
   - cffi=1.15.1=py311h5eee18b_3
   - cfitsio=3.470=h5893167_7
   - chardet=4.0.0=py311h06a4308_1003
@@ -263,6 +264,7 @@ dependencies:
   - libwebp=1.2.4=h11a3e52_1
   - libwebp-base=1.2.4=h5eee18b_1
   - libxcb=1.15=h7f8727e_0
+  - libxgboost=3.0.1=h6a678d5_0
   - libxkbcommon=1.0.1=hfa300c1_0
   - libxml2=2.9.14=h74e7548_0
   - libxslt=1.1.35=h4e12654_0
@@ -323,11 +325,9 @@ dependencies:
   - numpydoc=1.5.0=py311h06a4308_0
   - oniguruma=6.9.7.1=h27cfd23_0
   - openjpeg=2.4.0=h3ad879b_0
-  - openpyxl=3.0.10=py311h5eee18b_0
+  - openpyxl=3.1.5=py311h5eee18b_1
   - openssl=1.1.1w=h7f8727e_0
   - orc=1.7.4=hb3bc3d3_1
-  - packaging=23.1=py311h06a4308_0
-  - pandas=2.0.3=py311ha02d727_0
   - pandocfilters=1.5.0=pyhd3eb1b0_0
   - panel=1.2.3=py311h06a4308_0
   - param=1.13.0=py311h06a4308_0
@@ -366,6 +366,7 @@ dependencies:
   - pure_eval=0.2.2=pyhd3eb1b0_0
   - py-cpuinfo=8.0.0=pyhd3eb1b0_1
   - py-lief=0.12.3=py311h6a678d5_0
+  - py-xgboost=3.0.1=py311h06a4308_0
   - pyarrow=11.0.0=py311hd8e8d9b_1
   - pyasn1=0.4.8=pyhd3eb1b0_0
   - pyasn1-modules=0.2.8=py_0
@@ -521,8 +522,8 @@ dependencies:
   - widgetsnbextension=4.0.5=py311h06a4308_0
   - wrapt=1.14.1=py311h5eee18b_0
   - wurlitzer=3.0.2=py311h06a4308_0
-  - xarray=2023.6.0=py311h06a4308_0
   - xerces-c=3.2.4=h94c2ce2_0
+  - xgboost=3.0.1=py311h06a4308_0
   - xlsxwriter=3.1.1=py311h06a4308_0
   - xxhash=0.8.0=h7f8727e_3
   - xyzservices=2022.9.0=py311h06a4308_1
@@ -554,9 +555,12 @@ dependencies:
       - geopandas==0.14.2
       - google-auth==2.26.1
       - google-auth-oauthlib==1.2.0
+      - gpytorch==1.14
       - grpcio==1.60.0
       - hydra-core==1.3.2
       - iopath==0.1.9
+      - jaxtyping==0.3.2
+      - linear-operator==0.6
       - nvidia-cublas-cu12==12.1.3.1
       - nvidia-cuda-cupti-cu12==12.1.105
       - nvidia-cuda-nvrtc-cu12==12.1.105
@@ -572,13 +576,16 @@ dependencies:
       - oauthlib==3.2.2
       - omegaconf==2.3.0
       - optunity==1.1.1
+      - packaging==25.0
+      - pandas==2.2.3
       - portalocker==2.8.2
       - protobuf==4.23.4
       - pycocotools==2.0.7
       - pydot==2.0.0
       - pyproj==3.6.1
-      - rasterio==1.3.9
+      - rasterio==1.4.3
       - requests-oauthlib==1.3.1
+      - rioxarray==0.19.0
       - rsa==4.9
       - shapely==2.0.4
       - spectral==0.23.1
@@ -589,5 +596,7 @@ dependencies:
       - torch==2.1.2
       - torchvision==0.16.2
       - triton==2.1.0
+      - wadler-lindig==0.1.7
+      - xarray==2025.3.1
       - yacs==0.1.8
 prefix: /home/huajian/anaconda3/envs/appf_toolbox_env
