@@ -261,6 +261,8 @@ def average_classification_metrics(record_cv):
 
 def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, random_state=0,
                        note='',
+                       input_name='x',
+                       label_name='y',
                        flag_save=False,
                        file_name_prefix='cv_record'):
     """
@@ -426,7 +428,11 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
               'classes': str(classes),
               'count in each class': str(counts),
               'final model': final_model,
-              'note': note}
+              'note': note,
+              'input': input,
+              'input name': input_name,
+              'label': label,
+              'label name': label_name}
 
     # Save
     if flag_save:
