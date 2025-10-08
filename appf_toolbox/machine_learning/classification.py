@@ -449,6 +449,7 @@ def tune_svm_classification(input,
                             svm_c_range=[1, 100],
                             svm_gamma_range=[1, 50],
                             svm_tol=1e-3,
+                            class_weight='None',
                             opt_num_iter_cv=5,
                             opt_num_fold_cv=5,
                             opt_num_evals=5):
@@ -474,7 +475,7 @@ def tune_svm_classification(input,
     # Search the optimal parameters
     @optunity.cross_validated(x=input, y=label, num_iter=opt_num_iter_cv, num_folds=opt_num_fold_cv)
     def tune_cv(x_train, y_train, x_test, y_test, C, gamma):
-        model = SVC(kernel=svm_kernel, C=C, gamma=gamma, tol=svm_tol)
+        model = SVC(kernel=svm_kernel, C=C, gamma=gamma, tol=svm_tol, class_weight=class_weight)
         model.fit(x_train, y_train)
         predictions = model.predict(x_test)
         return optunity.metrics.error_rate(y_test, predictions) # error_rate = 1.0 - accuracy(y, yhat)
@@ -482,7 +483,7 @@ def tune_svm_classification(input,
     optimal_pars, _, _ = optunity.minimize(tune_cv, num_evals=opt_num_evals, C=svm_c_range, gamma=svm_gamma_range)
 
     # Train a model using the optimal parameters
-    tuned_model = SVC(kernel=svm_kernel, **optimal_pars, tol=svm_tol).fit(input, label)
+    tuned_model = SVC(kernel=svm_kernel, **optimal_pars, tol=svm_tol, class_weight=class_weight).fit(input, label)
     return tuned_model
 
 
