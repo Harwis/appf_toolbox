@@ -238,11 +238,11 @@ def average_classification_metrics(record_cv):
     # Average f1 score
     ave_f1_tra = np.asarray(ave_f1_tra)
     ave_f1_tra = np.mean(ave_f1_tra, axis=0)
-    ave_f1_tra = np.round(ave_f1_tra, 2)
+    ave_f1_tra = np.round(ave_f1_tra, 4)
 
     ave_f1_val = np.asarray(ave_f1_val)
     ave_f1_val = np.mean(ave_f1_val, axis=0)
-    ave_f1_val = np.round(ave_f1_val, 2)
+    ave_f1_val = np.round(ave_f1_val, 4)
 
     ave_metrics = {'ave_metrics_train': {'conf_mat': str(ave_con_mat_tra),
                                          'accuracy': ave_accuracy_tra,
@@ -306,14 +306,19 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
         print('========== cross validation ' + str(count_cv) + ' ==========')
 
         # Train
-        tuned_model = tune_model(input[train_ind], label[train_ind], **karg)
-        print('Tuned model:')
-        print(tuned_model)
+        try:
+            tuned_model = tune_model(input[train_ind], label[train_ind], **karg)
+            print('Tuned model:')
+            print(tuned_model)
+        except ValueError as e:
+            print(e)
+            print('Cannot tune model ')
+            count_cv += 1
+            continue
 
-        # Number of positive and negative samples in validation
+        # Number of samples in each class
         classes_val, counts_val = np.unique(label[val_index], return_counts=True)
         classes_tra, counts_tra = np.unique(label[train_ind], return_counts=True)
-
 
         # The classes of training or validation should be the same of the total classes
         if classes_tra.shape[0] != classes.shape[0]:
@@ -381,7 +386,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
                                    'Classes validation': classes_val,
                                    'Confusion matrix of validation': conf_max_val,
                                    })
-            count_cv += 1
+        count_cv += 1
 
     if record_each_cv.__len__() == 0:
         print('No valid record in cross-validation.')
@@ -399,24 +404,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     print('Classes:', classes)
     print('Count in each class: ', counts)
     print('')
-
-    # print('--- Training ---')
-    # print('Confusion matrix:')
-    # print(ave_metrics['ave_metrics_train']['conf_mat'])
-    # print('Accuracy: ', ave_metrics['ave_metrics_train']['accuracy'])
-    # print('Recall: ', ave_metrics['ave_metrics_train']['recall'])
-    # print('Precision: ', ave_metrics['ave_metrics_train']['precision'])
-    # print('F1: ', ave_metrics['ave_metrics_train']['f1'])
-    # print('')
     print(pd.DataFrame(ave_metrics))
-
-    # print('--- Validation ---')
-    # print('Confusion matrix:')
-    # print(ave_metrics['ave_metrics_validation']['conf_mat'])
-    # print('Accuracy: ', ave_metrics['ave_metrics_validation']['accuracy'])
-    # print('Recall: ', ave_metrics['ave_metrics_validation']['recall'])
-    # print('Precision: ', ave_metrics['ave_metrics_validation']['precision'])
-    # print('F1: ', ave_metrics['ave_metrics_validation']['f1'])
 
     # Train a final model using all of the data
     final_model = tune_model(input, label, **karg)
