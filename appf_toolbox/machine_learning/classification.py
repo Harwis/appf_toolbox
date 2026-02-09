@@ -164,10 +164,11 @@ def average_bi_classification_metrics(record_cv):
     return ave_metrics
 
 
-def average_classification_metrics(record_cv):
+def average_classification_metrics(record_cv, average_method='macro avg'):
     """
     Average classification metrics for multiple classes. Designed for repeated_k-fold_cv.
     :param record_cv: recored of cross validaton retruned from
+    :param average_method: 'macro avg' or 'weighted avg'
     :return: Averaged classification metrics.
     """
     import numpy as np
@@ -189,15 +190,15 @@ def average_classification_metrics(record_cv):
         # Prepare data for averaging
         ave_con_mat_tra.append(a_record['Confusion matrix of train'])
         ave_accuracy_tra.append(a_record['Classification report of train']['accuracy'])
-        ave_recall_tra.append(a_record['Classification report of train']['weighted avg']['recall'])
-        ave_precision_tra.append(a_record['Classification report of train']['weighted avg']['precision'])
-        ave_f1_tra.append(a_record['Classification report of train']['weighted avg']['f1-score'])
+        ave_recall_tra.append(a_record['Classification report of train'][average_method]['recall'])
+        ave_precision_tra.append(a_record['Classification report of train'][average_method]['precision'])
+        ave_f1_tra.append(a_record['Classification report of train'][average_method]['f1-score'])
 
         ave_con_mat_val.append(a_record['Confusion matrix of validation'])
         ave_accuracy_val.append(a_record['Classification report of validation']['accuracy'])
-        ave_recall_val.append(a_record['Classification report of validation']['weighted avg']['recall'])
-        ave_precision_val.append(a_record['Classification report of validation']['weighted avg']['precision'])
-        ave_f1_val.append(a_record['Classification report of validation']['weighted avg']['f1-score'])
+        ave_recall_val.append(a_record['Classification report of validation'][average_method]['recall'])
+        ave_precision_val.append(a_record['Classification report of validation'][average_method]['precision'])
+        ave_f1_val.append(a_record['Classification report of validation'][average_method]['f1-score'])
 
     # Average confusion matrix
     ave_con_mat_tra = np.asarray(ave_con_mat_tra)
@@ -260,6 +261,7 @@ def average_classification_metrics(record_cv):
 
 
 def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, random_state=0,
+                       average_method='macro avg',
                        note='',
                        input_name='x',
                        label_name='y',
@@ -393,7 +395,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
         return -1
 
     # Average
-    ave_metrics = average_classification_metrics(record_each_cv)
+    ave_metrics = average_classification_metrics(record_each_cv, average_method=average_method)
 
     # Print the summary of cross-validation
     print()
@@ -403,6 +405,7 @@ def repeadted_kfold_cv(input, label, n_splits, n_repeats, tune_model, karg, rand
     print('Total samples: ', total_samples)
     print('Classes:', classes)
     print('Count in each class: ', counts)
+    print('Average method :' + average_method)
     print('')
     print(pd.DataFrame(ave_metrics))
 
