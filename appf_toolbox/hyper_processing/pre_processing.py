@@ -29,6 +29,9 @@ def remove_jumps(spec_sig, ind_jumps=[], num_points=5, flag_auto_detect_jumps=Fa
 
     :return: If ind_jumps is not empty, return the fixed spectral signature without jumps; otherwise return -1
 
+    Author: Huajian Liu
+    Version: v0: 2018-08-18
+
     """
 
     import numpy as np
@@ -82,11 +85,13 @@ def remove_jumps(spec_sig, ind_jumps=[], num_points=5, flag_auto_detect_jumps=Fa
             num_high_in_win = np.sum(np.abs(sec_der_pad[i:i + 2 * r_win + 1]) > t_der)
             if np.logical_and(np.abs(sec_der[i]) > t_der, num_high_in_win == 2):
                 ind_jumps.append(i)
-
-        if ind_jumps != []:
+        
+        if len(ind_jumps) != 0:
             # The high-values of 2end deri appears as paris. In each pair, remove the first one since only the second
             # one indicate the location of the jump.
             ind_jumps = np.delete(ind_jumps, range(0, ind_jumps.__len__(), 2))
+            print('\nJumps found at bands ', ind_jumps)
+
     else:  # Use the manually inputted band numbers.
         pass
 
@@ -96,7 +101,7 @@ def remove_jumps(spec_sig, ind_jumps=[], num_points=5, flag_auto_detect_jumps=Fa
     def fit_a_line(x, a, b):
         return a * x + b
 
-    if ind_jumps == []:
+    if len(ind_jumps) == 0:
         print('No jumps found!')
         return -1
     else:

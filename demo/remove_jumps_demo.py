@@ -1,5 +1,5 @@
 import sys
-sys.path.append('E:/python_projects/appf_toolbox_project')
+sys.path.append('/home/huajianliu/appn-tpa/huajian/projects/appf_toolbox')
 import numpy as np
 import appf_toolbox.hyper_processing.pre_processing as pp
 
@@ -7,8 +7,7 @@ print(pp.remove_jumps.__doc__)
 
 # Parameters:
 # data_path = '/media/huajian/Files/python_projects/appf_toolbox_demo_data'
-data_path = 'E:/python_projects/appf_toolbox_demo_data'
-
+data_path = data_path = 'demo_data'
 data_name = 'FieldSpec_demo_data.npy'
 data_id = 6
 ind_jump = [650, 1480] # Manually input the indices of jumps

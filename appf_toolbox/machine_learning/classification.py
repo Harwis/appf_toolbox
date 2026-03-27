@@ -552,7 +552,8 @@ def tune_svm_classification(input,
                             class_weight='None',
                             opt_num_iter_cv=5,
                             opt_num_fold_cv=5,
-                            opt_num_evals=5):
+                            opt_num_evals=5,
+                            flag_output_probability=True):
     """
     Tune a support vector machine classificaition model based on sklearn.svm.SVC
     :param input: The input data for training the model. 2D numpy array
@@ -575,7 +576,7 @@ def tune_svm_classification(input,
     # Search the optimal parameters
     @optunity.cross_validated(x=input, y=label, num_iter=opt_num_iter_cv, num_folds=opt_num_fold_cv)
     def tune_cv(x_train, y_train, x_test, y_test, C, gamma):
-        model = SVC(kernel=svm_kernel, C=C, gamma=gamma, tol=svm_tol, class_weight=class_weight, probability=True)
+        model = SVC(kernel=svm_kernel, C=C, gamma=gamma, tol=svm_tol, class_weight=class_weight, probability=flag_output_probability)
         model.fit(x_train, y_train)
         predictions = model.predict(x_test)
         return optunity.metrics.error_rate(y_test, predictions) # error_rate = 1.0 - accuracy(y, yhat)
