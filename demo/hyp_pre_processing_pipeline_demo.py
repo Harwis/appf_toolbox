@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/media/huajian/Files/python_projects/appf_toolbox_project')
+sys.path.append('/home/huajianliu/appn-tpa/huajian/projects/appf_toolbox')
 import numpy as np
 from matplotlib import pyplot as plt
 from appf_toolbox.hyper_processing import envi_funs
@@ -8,8 +8,8 @@ from appf_toolbox.hyper_processing import pre_processing as pp
 ########################################################################################################################
 # Parameters
 ########################################################################################################################
-data_path = 'E:/python_projects/appf_toolbox_demo_data'
-data_name = 'vnir_74_104_6235_2019-10-18_01-47-33'
+data_path = '/home/appn-tpa/huajian/data/demo'
+data_name = 'vnir_124_166_10501_2026-03-24_05-27-43'
 band_num_check = 100
 pix_check = [255, 206] # (col, row)
 
@@ -40,7 +40,7 @@ hypcube = envi_funs.calibrate_hyper_data(raw_data['white'], raw_data['dark'], ra
 ########################################################################################################################
 # Rotate the hypercube 180 degree if necessary
 ########################################################################################################################
-hypcube = pp.rotate_hypercube(hypcube, 180)
+# hypcube = pp.rotate_hypercube(hypcube, 180)
 
 # Check an image
 fig1 = plt.figure()
@@ -53,7 +53,7 @@ ax1_f1.set_title('Band ' + str(band_num_check) + ' ' + str(wavelengths[band_num_
 a_ref = hypcube[pix_check[0], pix_check[1], :]
 ax2_f1 = fig1.add_subplot(2,2,2)
 ax2_f1.plot(wavelengths, a_ref, 'g', label='Not smoothed')
-ax2_f1.set_title('Smoothing')
+ax2_f1.set_title('The reflectance of the pixle marked by red +')
 
 
 ########################################################################################################################
